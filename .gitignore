@@ -1,2 +1,6 @@
 venv
 *.so
+kernelcache*
+*.pyc
+__pycache__
+.vscode
