@@ -29,8 +29,6 @@ def readKernel(kernel):
 
 
 def findPattern(pattern, data):
-    matches = []
-
     data_len = len(data)
     pattern_len = len(pattern)
 
@@ -38,10 +36,7 @@ def findPattern(pattern, data):
         buffer = data[i:i+pattern_len]
 
         if pattern == buffer:
-            matches.append(i)
-
-    matches = [hex(m) for m in matches]
-    return matches
+            return hex(i)
 
 
 def findCSEnforcement(data):
@@ -61,8 +56,15 @@ def findCSEnforcement(data):
     # 80045876 44876 CS_Enforcement [_kernel_pmap, vm_page] vm_fault_enter
 
     search = b'\xa2\x6a\x1b\x68'
-    matches = findPattern(search, data)
-    return [search, matches]
+    match = findPattern(search, data)
+
+    info = {
+        match: {
+            'pattern': formatBytes(search)
+        }
+    }
+
+    return info
 
 
 def findAMFIMemcmp(data):
@@ -79,8 +81,15 @@ def findAMFIMemcmp(data):
     # 80553718 510718 AMFI::_memcmp CS_Enforcement
 
     search = b'\x29\x46\x13\x22\xd0\x47'
-    matches = findPattern(search, data)
-    return [search, matches]
+    match = findPattern(search, data)
+
+    info = {
+        match: {
+            'pattern': formatBytes(search)
+        }
+    }
+
+    return info
 
 
 def findPE_i_can_has_debugger(data):
@@ -112,7 +121,7 @@ def findPE_i_can_has_debugger(data):
     # 808BDB24 87ab24 debug_enabled PE_i_can_has_debugger AppleImage3NORAccess
 
     search1 = b'\x01\x22\xcd\xf8\x00\x80\xcd\xf8\x04\x80\x02\x93\xe0\x47\xc0'
-    matches1 = findPattern(search1, data)
+    match1 = findPattern(search1, data)
 
     '''
     com.apple.driver.AppleImage3NORAccess:__TEXT_hidden:808BDB7A DF F8 68 C0                 LDR.W           R12, =(sub_808BD904+1)
@@ -131,9 +140,18 @@ def findPE_i_can_has_debugger(data):
     # 808BDB90 87ab90 debug_enabled PE_i_can_has_debugger AppleImage3NORAccess
 
     search2 = b'\xcd\xf8\x04\x80\xcd\xf8\x08\x80\xe0\x47\x00\x28\x18'
-    matches2 = findPattern(search2, data)
+    match2 = findPattern(search2, data)
 
-    return [[search1, matches1], [search2, matches2]]
+    info = {
+        match1: {
+            'pattern': formatBytes(search1)
+        },
+        match2: {
+            'pattern': formatBytes(search2)
+        }
+    }
+
+    return info
 
 
 def findAppleImage3NORAccess(data):
@@ -149,7 +167,7 @@ def findAppleImage3NORAccess(data):
     # 808BDFEE 87afef _memcpy AppleImage3NORAccess LLB
 
     search1 = b'\x02\x21\x85\x4c\xa0\x47\x00\x28'
-    matches1 = findPattern(search1, data)
+    match1 = findPattern(search1, data)
 
     '''
     com.apple.driver.AppleImage3NORAccess:__TEXT_hidden:808BDFF2 05 98                       LDR             R0, [SP,#0x30+var_1C]
@@ -164,7 +182,7 @@ def findAppleImage3NORAccess(data):
     # 808BDFF8 87aff9 _memcpy AppleImage3NORAccess LLB
 
     search2 = b'\xf2\xd1\x05\x98\x83\x4c\xa0\x47\x00\x28'
-    matches2 = findPattern(search2, data)
+    match2 = findPattern(search2, data)
 
     '''
     com.apple.driver.AppleImage3NORAccess:__TEXT_hidden:808BE180 2B 4E                       LDR             R6, =(sub_808BD868+1)
@@ -177,7 +195,7 @@ def findAppleImage3NORAccess(data):
     # 808BE186 87b186 _memcpy AppleImage3NORAccess
 
     search3 = b'\x2b\x4e\x28\x46\x02\x99\xb0\x47'
-    matches3 = findPattern(search3, data)
+    match3 = findPattern(search3, data)
 
     '''
     com.apple.driver.AppleImage3NORAccess:__TEXT_hidden:808BF292 A7 F1 18 04                 SUB.W           R4, R7, #-var_18
@@ -190,9 +208,24 @@ def findAppleImage3NORAccess(data):
     # 808BF296 87c296 _memcmp AppleImage3NORAccess
 
     search4 = b'\xa7\xf1\x18\x04\x08\x46\xa5\x46\xbd\xe8'
-    matches4 = findPattern(search4, data)
+    match4 = findPattern(search4, data)
 
-    return [[search1, matches1], [search2, matches2], [search3, matches3], [search4, matches4]]
+    info = {
+        match1: {
+            'pattern': formatBytes(search1)
+        },
+        match2: {
+            'pattern': formatBytes(search2)
+        },
+        match3: {
+            'pattern': formatBytes(search3)
+        },
+        match4: {
+            'pattern': formatBytes(search4)
+        }
+    }
+
+    return info
 
 
 def writeJSON(data, path):
@@ -305,12 +338,19 @@ def main():
         if not args.patched:
             data = readKernel(args.orig[0])
 
-            offsets = [
+            offsets = (
                 findCSEnforcement(data),
                 findAMFIMemcmp(data),
                 findPE_i_can_has_debugger(data),
                 findAppleImage3NORAccess(data)
-            ]
+            )
+
+            info = {}
+
+            for part in offsets:
+                info.update(part)
+
+            writeJSON(info, 'patterns.json')
 
         else:
             diff = createDiff(args.orig[0], args.patched[0])
