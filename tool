@@ -325,6 +325,30 @@ def cleanUpDiff(info):
     return cleaned
 
 
+def diffKernels(orig, patched):
+    diff = createDiff(orig, patched)
+    diff_cleaned = cleanUpDiff(diff)
+    return json.loads(diff_cleaned)
+
+
+def findOffsets(path):
+    data = readKernel(path)
+
+    offsets = (
+        findCSEnforcement(data),
+        findAMFIMemcmp(data),
+        findPE_i_can_has_debugger(data),
+        findAppleImage3NORAccess(data)
+    )
+
+    info = {}
+
+    for part in offsets:
+        info.update(part)
+
+    return json.loads(info)
+
+
 def main():
     parser = ArgumentParser()
 
@@ -336,27 +360,12 @@ def main():
 
     if args.orig and args.find:
         if not args.patched:
-            data = readKernel(args.orig[0])
-
-            offsets = (
-                findCSEnforcement(data),
-                findAMFIMemcmp(data),
-                findPE_i_can_has_debugger(data),
-                findAppleImage3NORAccess(data)
-            )
-
-            info = {}
-
-            for part in offsets:
-                info.update(part)
-
-            writeJSON(info, 'patterns.json')
+            offsets = findOffsets(args.orig[0])
+            writeJSON(offsets, 'offsets.json')
 
         else:
-            diff = createDiff(args.orig[0], args.patched[0])
-            diff_cleaned = cleanUpDiff(diff)
-
-            writeJSON(diff_cleaned, 'diff.json')
+            diff = diffKernels(args.orig[0], args.patched[0])
+            writeJSON(diff, 'diff.json')
 
     else:
         parser.print_help()
