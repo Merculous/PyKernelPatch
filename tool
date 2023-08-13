@@ -328,7 +328,7 @@ def cleanUpDiff(info):
 def diffKernels(orig, patched):
     diff = createDiff(orig, patched)
     diff_cleaned = cleanUpDiff(diff)
-    return json.loads(diff_cleaned)
+    return diff_cleaned
 
 
 def findOffsets(path):
@@ -346,7 +346,11 @@ def findOffsets(path):
     for part in offsets:
         info.update(part)
 
-    return json.loads(info)
+    return info
+
+
+def patchKernel(orig, patched):
+    pass
 
 
 def main():
@@ -355,10 +359,11 @@ def main():
     parser.add_argument('--orig', nargs=1)
     parser.add_argument('--patched', nargs=1)
     parser.add_argument('--find', action='store_true')
+    parser.add_argument('--patch', action='store_true')
 
     args = parser.parse_args()
 
-    if args.orig and args.find:
+    if args.find and args.orig:
         if not args.patched:
             offsets = findOffsets(args.orig[0])
             writeJSON(offsets, 'offsets.json')
@@ -366,6 +371,9 @@ def main():
         else:
             diff = diffKernels(args.orig[0], args.patched[0])
             writeJSON(diff, 'diff.json')
+
+    elif args.patch and args.orig and args.patched:
+        patchKernel(args.orig[0], args.patched[0])
 
     else:
         parser.print_help()
