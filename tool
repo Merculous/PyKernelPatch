@@ -60,7 +60,9 @@ def findCSEnforcement(data):
 
     info = {
         match: {
-            'pattern': formatBytes(search)
+            'pattern': formatBytes(search),
+            'old': formatBytes(b'\x1b\x68'),
+            'new': formatBytes(b'\x01\x23')
         }
     }
 
@@ -85,7 +87,9 @@ def findAMFIMemcmp(data):
 
     info = {
         match: {
-            'pattern': formatBytes(search)
+            'pattern': formatBytes(search),
+            'old': formatBytes(b'\xd0\x47'),
+            'new': formatBytes(b'\x00\x20')
         }
     }
 
@@ -144,10 +148,14 @@ def findPE_i_can_has_debugger(data):
 
     info = {
         match1: {
-            'pattern': formatBytes(search1)
+            'pattern': formatBytes(search1),
+            'old': formatBytes(b'\xe0\x47'),
+            'new': formatBytes(b'\x00\x20')
         },
         match2: {
-            'pattern': formatBytes(search2)
+            'pattern': formatBytes(search2),
+            'old': formatBytes(b'\xe0\x47'),
+            'new': formatBytes(b'\x00\x20')
         }
     }
 
@@ -212,16 +220,24 @@ def findAppleImage3NORAccess(data):
 
     info = {
         match1: {
-            'pattern': formatBytes(search1)
+            'pattern': formatBytes(search1),
+            'old': formatBytes(b'\x00\x28'),
+            'new': formatBytes(b'\x00\x20')
         },
         match2: {
-            'pattern': formatBytes(search2)
+            'pattern': formatBytes(search2),
+            'old': formatBytes(b'\x00\x28'),
+            'new': formatBytes(b'\x00\x20')
         },
         match3: {
-            'pattern': formatBytes(search3)
+            'pattern': formatBytes(search3),
+            'old': formatBytes(b'\xb0\x47'),
+            'new': formatBytes(b'\x01\x20')
         },
         match4: {
-            'pattern': formatBytes(search4)
+            'pattern': formatBytes(search4),
+            'old': formatBytes(b'\x08\x46'),
+            'new': formatBytes(b'\x00\x20')
         }
     }
 
@@ -349,8 +365,48 @@ def findOffsets(path):
     return info
 
 
+def convertHexToBytes(data):
+    return bytes.fromhex(data)
+
+
+def writeBinaryFile(data, path):
+    with open(path, 'wb') as f:
+        f.write(data)
+
+
 def patchKernel(orig, patched):
-    pass
+    data = readKernel(orig)
+
+    # This will be the data we modify
+    new_data = bytearray(data[:])
+
+    offsets = findOffsets(orig)
+
+    for offset in offsets:
+        pattern = offsets[offset]['pattern']
+        old = offsets[offset]['old']
+        new = offsets[offset]['new']
+
+        pattern_len = len(pattern)
+
+        for i in range(len(data)):
+            i_hex = hex(i)
+
+            if i_hex == offset:
+                buffer = data[i:i+pattern_len]
+                buffer_hex = formatBytes(buffer)
+
+                if pattern in buffer_hex:
+                    print(f'Found pattern at offset: {i_hex}')
+
+                    new_data_hex = buffer_hex.replace(old, new)
+                    new_data_bytes = convertHexToBytes(new_data_hex)
+
+                    print(f'Patching: {old} to {new}')
+
+                    new_data[i:i+pattern_len] = new_data_bytes
+
+    writeBinaryFile(new_data, patched)
 
 
 def main():
@@ -359,21 +415,24 @@ def main():
     parser.add_argument('--orig', nargs=1)
     parser.add_argument('--patched', nargs=1)
     parser.add_argument('--find', action='store_true')
+    parser.add_argument('--diff', action='store_true')
     parser.add_argument('--patch', action='store_true')
 
     args = parser.parse_args()
 
-    if args.find and args.orig:
-        if not args.patched:
+    if args.find:
+        if args.orig and not args.patched:
             offsets = findOffsets(args.orig[0])
             writeJSON(offsets, 'offsets.json')
 
-        else:
+    elif args.diff:
+        if args.orig and args.patched:
             diff = diffKernels(args.orig[0], args.patched[0])
             writeJSON(diff, 'diff.json')
 
-    elif args.patch and args.orig and args.patched:
-        patchKernel(args.orig[0], args.patched[0])
+    elif args.patch:
+        if args.orig and args.patched:
+            patchKernel(args.orig[0], args.patched[0])
 
     else:
         parser.print_help()
