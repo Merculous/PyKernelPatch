@@ -1,6 +1,9 @@
-I have no idea where this is going to go. I've only tested one version, and haven't done anything with the actual  
-found offsets. I'm not even sure if these are the correct offsets for every other version. I'm sure they aren't.
+I don't know what to actually patch, but I know for certain I can find the offsets based on tools which
+does this for me. I guess this is just a Python rewrite for patchfinding used in jailbreaks.
 
-I will try to make either something close to a patchfinder or maybe something like fuzzy_patcher. I have no idea.
+So far, only patches I can replicate are from sn0wbreeze. The patches that are going to be added are just
+to restore. I will later add in the offsets and instructions needed to jailbreak.
 
-I also need to fix the return values, they are absolute trash.
+I guess I'm finally getting into to the real patchfinding now. Though it won't be accessible to apps, at least
+I can do it from my computer given we already have keys for almost every iOS version, for every device up
+to A11, but only A6 and below apply for this project.
