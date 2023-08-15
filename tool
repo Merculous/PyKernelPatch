@@ -21,6 +21,11 @@ Allow copying unsigned memory?
 Patch out something with above?
 '''
 
+kernel_versions = {
+    '5.0.1': '1878.4.46~1',
+    '5.1.1': '1878.11.10~1'
+}
+
 
 def readKernel(kernel):
     with open(kernel, 'rb') as f:
@@ -29,17 +34,135 @@ def readKernel(kernel):
 
 
 def findPattern(pattern, data):
+    # TODO
+    # Make this function be able to adjust a few bytes
+    # (look back and ahead a few bytes) so that it can
+    # actually find a pattern besides just looking for
+    # an exact match. This makes me need to adjust bytes
+    # for offsets even though the pattern is a few bytes
+    # different or off from position.
+
     data_len = len(data)
     pattern_len = len(pattern)
 
     for i in range(0, data_len, pattern_len):
+        # look_back = data[i-4:i]
+
         buffer = data[i:i+pattern_len]
+
+        # look_ahead = data[i+pattern_len+4:i+pattern_len+8]
+
+        # I guess I could just add in the look_back or look_ahead
+        # to a copy of the buffer and then check with that if the
+        # buffer did not work. I will obviously have to make sure
+        # that I adjust the offset based on the size of the look_x
+        # buffer, which atm is just 4 bytes.
 
         if pattern == buffer:
             return hex(i)
 
 
-def findCSEnforcement(data):
+def convertHexToBytes(data):
+    return bytes.fromhex(data)
+
+
+def formatBytes(data):
+    return binascii.hexlify(data).decode('utf-8')
+
+
+def getKernelVersion(data):
+    search = b'Darwin Kernel Version'
+
+    possible = (
+        b'10.3.1',
+        b'10.4.0',
+        b'11.0.0',
+        b'13.0.0',
+        b'14.0.0',
+        b'15.0.0',
+        b'15.6.0',
+        b'16.0.0',
+        b'16.1.0',
+        b'16.3.0',
+        b'16.5.0',
+        b'16.6.0',
+        b'16.7.0'
+    )
+
+    days = (
+        b'M',
+        b'T',
+        b'W',
+        b'T',
+        b'F',
+        b'S'
+    )
+
+    version_string = None
+    version_string_offset = None
+
+    for version in possible:
+        version_string1 = search + b' ' + version
+
+        match1 = findPattern(version_string1, data)
+
+        if match1:
+            version_string = version_string1
+            version_string_offset = match1
+            break
+
+        for day in days:
+            version_string2 = search + b' ' + version + b': ' + day
+
+            match2 = findPattern(version_string2, data)
+
+            if match2:
+                version_string = version_string2
+                version_string_offset = match2
+                break
+
+    if not version_string:
+        raise Exception('Could not find kernel version string!')
+
+    # 5.0.1 only works atm
+
+    # Get the rest of the string
+
+    # We can know for sure if we got to the end if we have a "X"/"58" at the end
+    # Depending on verison, the end of the buffer can change, which meanes that
+    # when we check for "X", we could be off by one or two, but at least one.abs
+
+    extra = len(version_string) + 75
+
+    i = int(version_string_offset[2:], 16)
+
+    buffer = data[i:i+extra]
+
+    buffer_hex = formatBytes(buffer)
+    buffer_X_index = buffer_hex.index('58')
+
+    new_buffer_hex = buffer_hex[:buffer_X_index+2]
+    new_buffer_hex_end = new_buffer_hex[buffer_X_index:]
+
+    new_buffer = convertHexToBytes(new_buffer_hex)
+
+    if new_buffer_hex_end != '58':
+        raise Exception(f'Failed extracting kernel version. Got buffer: {buffer}')
+
+    kernel_version = new_buffer.split(b';')[1].split(b'-')[1].split(b'/')[0].decode('utf-8')
+
+    results = (
+        hex(len(new_buffer)),
+        version_string_offset,
+        hex(i + extra),
+        new_buffer,
+        kernel_version
+    )
+
+    return results
+
+
+def findCSEnforcement(data, version):
     '''
     __TEXT:__text:8004586C DF F8 88 33                 LDR.W           R3, =dword_802DF338
     __TEXT:__text:80045870 1D EE 90 0F                 MRC             p15, 0, R0,c13,c0, 4
@@ -55,21 +178,42 @@ def findCSEnforcement(data):
 
     # 80045876 44876 CS_Enforcement [_kernel_pmap, vm_page] vm_fault_enter
 
-    search = b'\xa2\x6a\x1b\x68'
-    match = findPattern(search, data)
-
-    info = {
-        match: {
-            'pattern': formatBytes(search),
-            'old': formatBytes(b'\x1b\x68'),
-            'new': formatBytes(b'\x01\x23')
-        }
+    search = {
+        '5.0.1': [
+            {
+                'pattern': b'\xa2\x6a\x1b\x68',
+                'old': b'\x1b\x68',
+                'new': b'\x01\x23'
+            }
+        ],
+        '5.1.1': [
+            {
+                'pattern': b'\xa2\x6a\x1b\x68',
+                'old': b'\x1b\x68',
+                'new': b'\x01\x23'
+            }
+        ]
     }
 
-    return info
+    info = {}
+
+    for option in search:
+        if option == version:
+            for patch in search[version]:
+                offset = findPattern(patch['pattern'], data)
+
+                if offset:
+                    match = {offset: patch}
+
+                    info.update(match)
+
+    if info:
+        return info
+    else:
+        return None
 
 
-def findAMFIMemcmp(data):
+def findAMFIMemcmp(data, version):
     '''
     com.apple.driver.AppleMobileFileIntegrity:__text:80553712             loc_80553712                            ; CODE XREF: sub_805536E4+4A↓j
     com.apple.driver.AppleMobileFileIntegrity:__text:80553712 20 46                       MOV             R0, R4  ; __s1
@@ -82,21 +226,42 @@ def findAMFIMemcmp(data):
 
     # 80553718 510718 AMFI::_memcmp CS_Enforcement
 
-    search = b'\x29\x46\x13\x22\xd0\x47'
-    match = findPattern(search, data)
-
-    info = {
-        match: {
-            'pattern': formatBytes(search),
-            'old': formatBytes(b'\xd0\x47'),
-            'new': formatBytes(b'\x00\x20')
-        }
+    search = {
+        '5.0.1': [
+            {
+                'pattern': b'\x29\x46\x13\x22\xd0\x47\x01',
+                'old': b'\xd0\x47',
+                'new': b'\x00\x20'
+            }
+        ],
+        '5.1.1': [
+            {
+                'pattern': b'\x29\x46\x13\x22\xd0\x47',
+                'old': b'\xd0\x47',
+                'new': b'\x00\x20'
+            }
+        ]
     }
 
-    return info
+    info = {}
+
+    for option in search:
+        if option == version:
+            for patch in search[version]:
+                offset = findPattern(patch['pattern'], data)
+
+                if offset:
+                    match = {offset: patch}
+
+                    info.update(match)
+
+    if info:
+        return info
+    else:
+        return None
 
 
-def findPE_i_can_has_debugger(data):
+def findPE_i_can_has_debugger(data, version):
     '''
     com.apple.driver.AppleImage3NORAccess:__TEXT_hidden:808BDAF0 01 22                       MOVS            R2, #1
     com.apple.driver.AppleImage3NORAccess:__TEXT_hidden:808BDAF2 CD F8 00 80                 STR.W           R8, [SP,#0x2C+fromEntry]
@@ -124,8 +289,32 @@ def findPE_i_can_has_debugger(data):
 
     # 808BDB24 87ab24 debug_enabled PE_i_can_has_debugger AppleImage3NORAccess
 
-    search1 = b'\x01\x22\xcd\xf8\x00\x80\xcd\xf8\x04\x80\x02\x93\xe0\x47\xc0'
-    match1 = findPattern(search1, data)
+    search = {
+        '5.0.1': [
+            {
+                'pattern': b'\x00\x80\xcd\xf8\x04\x80\x02\x93\xe0\x47\xc0\xbb',
+                'old': b'\xe0\x47',
+                'new': b'\x00\x20'
+            },
+            {
+                'pattern': b'\xe0\x47\x00\x28\x18\xbf\x4f\xf0\x01\x08\x40\x46\x05\xb0',
+                'old': b'\xe0\x47',
+                'new': b'\x00\x20'
+            }
+        ],
+        '5.1.1': [
+            {
+                'pattern': b'\x01\x22\xcd\xf8\x00\x80\xcd\xf8\x04\x80\x02\x93\xe0\x47\xc0',
+                'old': b'\xe0\x47',
+                'new': b'\x00\x20'
+            },
+            {
+                'pattern': b'\xcd\xf8\x04\x80\xcd\xf8\x08\x80\xe0\x47\x00\x28\x18',
+                'old': b'\xe0\x47',
+                'new': b'\x00\x20'
+            }
+        ]
+    }
 
     '''
     com.apple.driver.AppleImage3NORAccess:__TEXT_hidden:808BDB7A DF F8 68 C0                 LDR.W           R12, =(sub_808BD904+1)
@@ -143,26 +332,25 @@ def findPE_i_can_has_debugger(data):
 
     # 808BDB90 87ab90 debug_enabled PE_i_can_has_debugger AppleImage3NORAccess
 
-    search2 = b'\xcd\xf8\x04\x80\xcd\xf8\x08\x80\xe0\x47\x00\x28\x18'
-    match2 = findPattern(search2, data)
+    info = {}
 
-    info = {
-        match1: {
-            'pattern': formatBytes(search1),
-            'old': formatBytes(b'\xe0\x47'),
-            'new': formatBytes(b'\x00\x20')
-        },
-        match2: {
-            'pattern': formatBytes(search2),
-            'old': formatBytes(b'\xe0\x47'),
-            'new': formatBytes(b'\x00\x20')
-        }
-    }
+    for option in search:
+        if option == version:
+            for patch in search[version]:
+                offset = findPattern(patch['pattern'], data)
 
-    return info
+                if offset:
+                    match = {offset: patch}
+
+                    info.update(match)
+
+    if info:
+        return info
+    else:
+        return None
 
 
-def findAppleImage3NORAccess(data):
+def findAppleImage3NORAccess(data, version):
     '''
     com.apple.driver.AppleImage3NORAccess:__TEXT_hidden:808BDFE6 05 98                       LDR             R0, [SP,#0x30+var_1C]
     com.apple.driver.AppleImage3NORAccess:__TEXT_hidden:808BDFE8 02 21                       MOVS            R1, #2
@@ -174,8 +362,52 @@ def findAppleImage3NORAccess(data):
 
     # 808BDFEE 87afef _memcpy AppleImage3NORAccess LLB
 
-    search1 = b'\x02\x21\x85\x4c\xa0\x47\x00\x28'
-    match1 = findPattern(search1, data)
+    search = {
+        '5.0.1': [
+            {
+                'pattern': b'\x02\x21\x85\x4c\xa0\x47\x00\x28',
+                'old': b'\x00\x28',
+                'new': b'\x00\x20'
+            },
+            {
+                'pattern': b'\xf2\xd1\x05\x98\x83\x4c\xa0\x47\x00\x28\xed\xd1',
+                'old': b'\x00\x28',
+                'new': b'\x00\x20'
+            },
+            {
+                'pattern': b'\x2b\x4e\x28\x46\x02\x99\xb0\x47',
+                'old': b'\xb0\x47',
+                'new': b'\x01\x20'
+            },
+            {
+                'pattern': b'\x4f\xf0\xff\x31\xa7\xf1\x18\x04\x08\x46\xa5\x46\xbd\xe8\x00\x0d\xf0',
+                'old': b'\x08\x46',
+                'new': b'\x00\x20'
+            }
+        ],
+        '5.1.1': [
+            {
+                'pattern': b'\x02\x21\x85\x4c\xa0\x47\x00\x28',
+                'old': b'\x00\x28',
+                'new': b'\x00\x20'
+            },
+            {
+                'pattern': b'\xf2\xd1\x05\x98\x83\x4c\xa0\x47\x00\x28',
+                'old': b'\x00\x28',
+                'new': b'\x00\x20'
+            },
+            {
+                'pattern': b'\x2b\x4e\x28\x46\x02\x99\xb0\x47',
+                'old': b'\xb0\x47',
+                'new': b'\x01\x20'
+            },
+            {
+                'pattern': b'\xa7\xf1\x18\x04\x08\x46\xa5\x46\xbd\xe8',
+                'old': b'\x08\x46',
+                'new': b'\x00\x20'
+            }
+        ]
+    }
 
     '''
     com.apple.driver.AppleImage3NORAccess:__TEXT_hidden:808BDFF2 05 98                       LDR             R0, [SP,#0x30+var_1C]
@@ -189,9 +421,6 @@ def findAppleImage3NORAccess(data):
 
     # 808BDFF8 87aff9 _memcpy AppleImage3NORAccess LLB
 
-    search2 = b'\xf2\xd1\x05\x98\x83\x4c\xa0\x47\x00\x28'
-    match2 = findPattern(search2, data)
-
     '''
     com.apple.driver.AppleImage3NORAccess:__TEXT_hidden:808BE180 2B 4E                       LDR             R6, =(sub_808BD868+1)
     com.apple.driver.AppleImage3NORAccess:__TEXT_hidden:808BE182 28 46                       MOV             R0, R5
@@ -201,9 +430,6 @@ def findAppleImage3NORAccess(data):
     '''
 
     # 808BE186 87b186 _memcpy AppleImage3NORAccess
-
-    search3 = b'\x2b\x4e\x28\x46\x02\x99\xb0\x47'
-    match3 = findPattern(search3, data)
 
     '''
     com.apple.driver.AppleImage3NORAccess:__TEXT_hidden:808BF292 A7 F1 18 04                 SUB.W           R4, R7, #-var_18
@@ -215,42 +441,27 @@ def findAppleImage3NORAccess(data):
 
     # 808BF296 87c296 _memcmp AppleImage3NORAccess
 
-    search4 = b'\xa7\xf1\x18\x04\x08\x46\xa5\x46\xbd\xe8'
-    match4 = findPattern(search4, data)
+    info = {}
 
-    info = {
-        match1: {
-            'pattern': formatBytes(search1),
-            'old': formatBytes(b'\x00\x28'),
-            'new': formatBytes(b'\x00\x20')
-        },
-        match2: {
-            'pattern': formatBytes(search2),
-            'old': formatBytes(b'\x00\x28'),
-            'new': formatBytes(b'\x00\x20')
-        },
-        match3: {
-            'pattern': formatBytes(search3),
-            'old': formatBytes(b'\xb0\x47'),
-            'new': formatBytes(b'\x01\x20')
-        },
-        match4: {
-            'pattern': formatBytes(search4),
-            'old': formatBytes(b'\x08\x46'),
-            'new': formatBytes(b'\x00\x20')
-        }
-    }
+    for option in search:
+        if option == version:
+            for patch in search[version]:
+                offset = findPattern(patch['pattern'], data)
 
-    return info
+                if offset:
+                    match = {offset: patch}
+
+                    info.update(match)
+
+    if info:
+        return info
+    else:
+        return None
 
 
 def writeJSON(data, path):
     with open(path, 'w') as f:
         json.dump(data, f, indent=2)
-
-
-def formatBytes(data):
-    return binascii.hexlify(data).decode('utf-8')
 
 
 def createDiff(orig, patched):
@@ -350,11 +561,19 @@ def diffKernels(orig, patched):
 def findOffsets(path):
     data = readKernel(path)
 
+    version_string = getKernelVersion(data)
+
+    for version in kernel_versions:
+        kernel_string = kernel_versions[version]
+
+        if version_string[-1] == kernel_string:
+            break
+
     offsets = (
-        findCSEnforcement(data),
-        findAMFIMemcmp(data),
-        findPE_i_can_has_debugger(data),
-        findAppleImage3NORAccess(data)
+        findCSEnforcement(data, version),
+        findAMFIMemcmp(data, version),
+        findPE_i_can_has_debugger(data, version),
+        findAppleImage3NORAccess(data, version)
     )
 
     info = {}
@@ -363,10 +582,6 @@ def findOffsets(path):
         info.update(part)
 
     return info
-
-
-def convertHexToBytes(data):
-    return bytes.fromhex(data)
 
 
 def writeBinaryFile(data, path):
@@ -382,10 +597,13 @@ def patchKernel(orig, patched):
 
     offsets = findOffsets(orig)
 
+    offsets_found = 0
+    offsets_possible = 8
+
     for offset in offsets:
-        pattern = offsets[offset]['pattern']
-        old = offsets[offset]['old']
-        new = offsets[offset]['new']
+        pattern = formatBytes(offsets[offset]['pattern'])
+        old = formatBytes(offsets[offset]['old'])
+        new = formatBytes(offsets[offset]['new'])
 
         pattern_len = len(pattern)
 
@@ -397,6 +615,8 @@ def patchKernel(orig, patched):
                 buffer_hex = formatBytes(buffer)
 
                 if pattern in buffer_hex:
+                    offsets_found += 1
+
                     print(f'Found pattern at offset: {i_hex}')
 
                     new_data_hex = buffer_hex.replace(old, new)
@@ -406,7 +626,22 @@ def patchKernel(orig, patched):
 
                     new_data[i:i+pattern_len] = new_data_bytes
 
+    if offsets_found != offsets_possible:
+        print(f'Found {offsets_found}/{offsets_possible} offsets!')
+
     writeBinaryFile(new_data, patched)
+
+
+def writeOffsetsToJSON(kernel, path):
+    offsets = findOffsets(kernel)
+
+    offsets_formatted = offsets.copy()
+
+    for offset in offsets:
+        for k, v in offsets[offset].items():
+            offsets_formatted[offset][k] = formatBytes(v)
+
+    writeJSON(offsets_formatted, path)
 
 
 def main():
@@ -418,12 +653,13 @@ def main():
     parser.add_argument('--diff', action='store_true')
     parser.add_argument('--patch', action='store_true')
 
+    parser.add_argument('--test', action='store_true')
+
     args = parser.parse_args()
 
     if args.find:
         if args.orig and not args.patched:
-            offsets = findOffsets(args.orig[0])
-            writeJSON(offsets, 'offsets.json')
+            writeOffsetsToJSON(args.orig[0], 'offsets.json')
 
     elif args.diff:
         if args.orig and args.patched:
@@ -433,6 +669,10 @@ def main():
     elif args.patch:
         if args.orig and args.patched:
             patchKernel(args.orig[0], args.patched[0])
+
+    elif args.test:
+        data = readKernel(args.orig[0])
+        getKernelVersion(data)
 
     else:
         parser.print_help()
