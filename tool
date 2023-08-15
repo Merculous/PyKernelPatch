@@ -23,6 +23,7 @@ Patch out something with above?
 
 kernel_versions = {
     '5.0.1': '1878.4.46~1',
+    '5.1': '1878.11.8~1',
     '5.1.1': '1878.11.10~1'
 }
 
@@ -90,12 +91,13 @@ def getKernelVersion(data):
     )
 
     days = (
-        b'M',
-        b'T',
-        b'W',
-        b'T',
-        b'F',
-        b'S'
+        b'Mon',
+        b'Tue',
+        b'Wed',
+        b'Thu',
+        b'Fri',
+        b'Sat',
+        b'Sun'
     )
 
     version_string = None
@@ -112,25 +114,26 @@ def getKernelVersion(data):
             break
 
         for day in days:
-            version_string2 = search + b' ' + version + b': ' + day
+            version_string2 = search + b' ' + version + b': ' + day[:1]
 
             match2 = findPattern(version_string2, data)
+
+            version_string3 = search + b' ' + version + b': ' + day[:2]
+
+            match3 = findPattern(version_string3, data)
 
             if match2:
                 version_string = version_string2
                 version_string_offset = match2
                 break
 
+            elif match3:
+                version_string = version_string3
+                version_string_offset = match3
+                break
+
     if not version_string:
         raise Exception('Could not find kernel version string!')
-
-    # 5.0.1 only works atm
-
-    # Get the rest of the string
-
-    # We can know for sure if we got to the end if we have a "X"/"58" at the end
-    # Depending on verison, the end of the buffer can change, which meanes that
-    # when we check for "X", we could be off by one or two, but at least one.abs
 
     extra = len(version_string) + 75
 
@@ -579,9 +582,13 @@ def findOffsets(path):
     info = {}
 
     for part in offsets:
-        info.update(part)
+        if part:
+            info.update(part)
 
-    return info
+    if info:
+        return info
+    else:
+        raise Exception('No offsets were found!')
 
 
 def writeBinaryFile(data, path):
