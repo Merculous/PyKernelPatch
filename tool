@@ -27,6 +27,8 @@ kernel_versions = {
     '5.1.1': '1878.11.10~1'
 }
 
+# 80043000
+
 
 def readKernel(kernel):
     with open(kernel, 'rb') as f:
@@ -34,33 +36,34 @@ def readKernel(kernel):
         return data
 
 
-def findPattern(pattern, data):
-    # TODO
-    # Make this function be able to adjust a few bytes
-    # (look back and ahead a few bytes) so that it can
-    # actually find a pattern besides just looking for
-    # an exact match. This makes me need to adjust bytes
-    # for offsets even though the pattern is a few bytes
-    # different or off from position.
-
+def findPattern(pattern, data, look=4):
     data_len = len(data)
     pattern_len = len(pattern)
 
+    found = None
+
     for i in range(0, data_len, pattern_len):
-        # look_back = data[i-4:i]
+        look_back = data[i-look:i]
 
         buffer = data[i:i+pattern_len]
 
-        # look_ahead = data[i+pattern_len+4:i+pattern_len+8]
+        look_ahead = data[i+pattern_len:i+pattern_len+look]
 
-        # I guess I could just add in the look_back or look_ahead
-        # to a copy of the buffer and then check with that if the
-        # buffer did not work. I will obviously have to make sure
-        # that I adjust the offset based on the size of the look_x
-        # buffer, which atm is just 4 bytes.
+        window = look_back + buffer + look_ahead
 
         if pattern == buffer:
-            return hex(i)
+            found = hex(i)
+
+        else:
+            if pattern in window:
+                found = hex(i-look)
+            else:
+                window = b''
+
+    if found:
+        return found
+    else:
+        return None
 
 
 def convertHexToBytes(data):
@@ -189,6 +192,13 @@ def findCSEnforcement(data, version):
                 'new': b'\x01\x23'
             }
         ],
+        '5.1': [
+            {
+                'pattern': b'\xa2\x6a\x1b\x68',
+                'old': b'\x1b\x68',
+                'new': b'\x01\x23'
+            }
+        ],
         '5.1.1': [
             {
                 'pattern': b'\xa2\x6a\x1b\x68',
@@ -233,6 +243,13 @@ def findAMFIMemcmp(data, version):
         '5.0.1': [
             {
                 'pattern': b'\x29\x46\x13\x22\xd0\x47\x01',
+                'old': b'\xd0\x47',
+                'new': b'\x00\x20'
+            }
+        ],
+        '5.1': [
+            {
+                'pattern': b'\x29\x46\x13\x22\xd0\x47\x01\x21\x40\xb1\x13\x35\x00',
                 'old': b'\xd0\x47',
                 'new': b'\x00\x20'
             }
@@ -305,6 +322,18 @@ def findPE_i_can_has_debugger(data, version):
                 'new': b'\x00\x20'
             }
         ],
+        '5.1': [
+            {
+                'pattern': b'\x00\x80\xcd\xf8\x04\x80\x02\x93\xe0\x47\xc0\xbb',
+                'old': b'\xe0\x47',
+                'new': b'\x00\x20'
+            },
+            {
+                'pattern': b'\xcd\xf8\x04\x80\xcd\xf8\x08\x80\xe0\x47\x00\x28\x18',  # Need to adjust
+                'old': b'\xe0\x47',
+                'new': b'\x00\x20'
+            }
+        ],
         '5.1.1': [
             {
                 'pattern': b'\x01\x22\xcd\xf8\x00\x80\xcd\xf8\x04\x80\x02\x93\xe0\x47\xc0',
@@ -367,6 +396,28 @@ def findAppleImage3NORAccess(data, version):
 
     search = {
         '5.0.1': [
+            {
+                'pattern': b'\x02\x21\x85\x4c\xa0\x47\x00\x28',
+                'old': b'\x00\x28',
+                'new': b'\x00\x20'
+            },
+            {
+                'pattern': b'\xf2\xd1\x05\x98\x83\x4c\xa0\x47\x00\x28\xed\xd1',
+                'old': b'\x00\x28',
+                'new': b'\x00\x20'
+            },
+            {
+                'pattern': b'\x2b\x4e\x28\x46\x02\x99\xb0\x47',
+                'old': b'\xb0\x47',
+                'new': b'\x01\x20'
+            },
+            {
+                'pattern': b'\x4f\xf0\xff\x31\xa7\xf1\x18\x04\x08\x46\xa5\x46\xbd\xe8\x00\x0d\xf0',
+                'old': b'\x08\x46',
+                'new': b'\x00\x20'
+            }
+        ],
+        '5.1': [
             {
                 'pattern': b'\x02\x21\x85\x4c\xa0\x47\x00\x28',
                 'old': b'\x00\x28',
