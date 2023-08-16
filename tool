@@ -22,6 +22,7 @@ Patch out something with above?
 '''
 
 kernel_versions = {
+    '5.0': '1878.4.43~2',
     '5.0.1': '1878.4.46~1',
     '5.1': '1878.11.8~1',
     '5.1.1': '1878.11.10~1'
@@ -185,6 +186,13 @@ def findCSEnforcement(data, version):
     # 80045876 44876 CS_Enforcement [_kernel_pmap, vm_page] vm_fault_enter
 
     search = {
+        '5.0': [
+            {
+                'pattern': b'\xa2\x6a\x1b\x68',
+                'old': b'\x1b\x68',
+                'new': b'\x01\x23'
+            }
+        ],
         '5.0.1': [
             {
                 'pattern': b'\xa2\x6a\x1b\x68',
@@ -240,6 +248,13 @@ def findAMFIMemcmp(data, version):
     # 80553718 510718 AMFI::_memcmp CS_Enforcement
 
     search = {
+        '5.0': [
+            {
+                'pattern': b'\x29\x46\x13\x22\xd0\x47\x01',
+                'old': b'\xd0\x47',
+                'new': b'\x00\x20'
+            }
+        ],
         '5.0.1': [
             {
                 'pattern': b'\x29\x46\x13\x22\xd0\x47\x01',
@@ -310,6 +325,18 @@ def findPE_i_can_has_debugger(data, version):
     # 808BDB24 87ab24 debug_enabled PE_i_can_has_debugger AppleImage3NORAccess
 
     search = {
+        '5.0': [
+            {
+                'pattern': b'\x00\x80\xcd\xf8\x04\x80\x02\x93\xe0\x47\xc0\xbb',
+                'old': b'\xe0\x47',
+                'new': b'\x00\x20'
+            },
+            {
+                'pattern': b'\xe0\x47\x00\x28\x18\xbf\x4f\xf0\x01\x08\x40\x46\x05\xb0',
+                'old': b'\xe0\x47',
+                'new': b'\x00\x20'
+            }
+        ],
         '5.0.1': [
             {
                 'pattern': b'\x00\x80\xcd\xf8\x04\x80\x02\x93\xe0\x47\xc0\xbb',
@@ -395,6 +422,28 @@ def findAppleImage3NORAccess(data, version):
     # 808BDFEE 87afef _memcpy AppleImage3NORAccess LLB
 
     search = {
+        '5.0': [
+            {
+                'pattern': b'\x02\x21\x85\x4c\xa0\x47\x00\x28',
+                'old': b'\x00\x28',
+                'new': b'\x00\x20'
+            },
+            {
+                'pattern': b'\xf2\xd1\x05\x98\x83\x4c\xa0\x47\x00\x28\xed\xd1',
+                'old': b'\x00\x28',
+                'new': b'\x00\x20'
+            },
+            {
+                'pattern': b'\x2b\x4e\x28\x46\x02\x99\xb0\x47',
+                'old': b'\xb0\x47',
+                'new': b'\x01\x20'
+            },
+            {
+                'pattern': b'\x4f\xf0\xff\x31\xa7\xf1\x18\x04\x08\x46\xa5\x46\xbd\xe8\x00\x0d\xf0',
+                'old': b'\x08\x46',
+                'new': b'\x00\x20'
+            }
+        ],
         '5.0.1': [
             {
                 'pattern': b'\x02\x21\x85\x4c\xa0\x47\x00\x28',
