@@ -2,3 +2,5 @@ venv
 .vscode
 kernelcache*
 *.json
+__pycache__
+*.pyc
