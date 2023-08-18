@@ -1,5 +1,6 @@
 
 from .file import readBinaryFile
+from .patterns import Pattern
 from .utils import convertHexToBytes, formatBytes
 
 '''
@@ -20,36 +21,41 @@ Patch out something with above?
 '''
 
 kernel_versions = {
-    '5.0': '1878.4.43~2',
-    '5.0.1': '1878.4.46~1',
-    '5.1': '1878.11.8~1',
-    '5.1.1': '1878.11.10~1'
+    '5.x': {
+        '5.0': '1878.4.43~2',
+        '5.0.1': '1878.4.46~1',
+        '5.1': '1878.11.8~1',
+        '5.1.1': '1878.11.10~1'
+    }
 }
 
 # 80043000
 
 
-def findPattern(pattern, data, look=4):
+def findPattern(pattern, data, look_back=4, look_ahead=4):
     data_len = len(data)
     pattern_len = len(pattern)
 
     found = None
 
     for i in range(0, data_len, pattern_len):
-        look_back = data[i-look:i]
+        look_back_buffer = data[i-look_back:i]
 
         buffer = data[i:i+pattern_len]
 
-        look_ahead = data[i+pattern_len:i+pattern_len+look]
+        look_ahead_buffer = data[i+pattern_len:i+pattern_len+look_ahead]
 
-        window = look_back + buffer + look_ahead
+        window = look_back_buffer + buffer + look_ahead_buffer
 
         if pattern == buffer:
             found = hex(i)
 
+        # TODO
+        # Actually add the dynamic nature of look_back and look_ahead
+
         else:
             if pattern in window:
-                found = hex(i-look)
+                found = hex(i-look_back)
             else:
                 window = b''
 
@@ -178,6 +184,23 @@ def getKernelVersion(data):
     return results
 
 
+def findPatchOffset(patterns, data):
+    info = {}
+
+    for pattern in patterns:
+        offset = findPattern(pattern, data)
+
+        if offset:
+            match = {offset: pattern}
+
+            info.update(match)
+
+    if info:
+        return info
+    else:
+        return None
+
+
 def findCSEnforcement(data, version):
     '''
     __TEXT:__text:8004586C DF F8 88 33                 LDR.W           R3, =dword_802DF338
@@ -194,53 +217,11 @@ def findCSEnforcement(data, version):
 
     # 80045876 44876 CS_Enforcement [_kernel_pmap, vm_page] vm_fault_enter
 
-    search = {
-        '5.0': [
-            {
-                'pattern': b'\xa2\x6a\x1b\x68',
-                'old': b'\x1b\x68',
-                'new': b'\x01\x23'
-            }
-        ],
-        '5.0.1': [
-            {
-                'pattern': b'\xa2\x6a\x1b\x68',
-                'old': b'\x1b\x68',
-                'new': b'\x01\x23'
-            }
-        ],
-        '5.1': [
-            {
-                'pattern': b'\xa2\x6a\x1b\x68',
-                'old': b'\x1b\x68',
-                'new': b'\x01\x23'
-            }
-        ],
-        '5.1.1': [
-            {
-                'pattern': b'\xa2\x6a\x1b\x68',
-                'old': b'\x1b\x68',
-                'new': b'\x01\x23'
-            }
-        ]
-    }
+    search = Pattern(version).CSEnforcement()
+    offsets = findPatchOffset(search, data)
 
-    info = {}
-
-    for option in search:
-        if option == version:
-            for patch in search[version]:
-                offset = findPattern(patch['pattern'], data)
-
-                if offset:
-                    match = {offset: patch}
-
-                    info.update(match)
-
-    if info:
-        return info
-    else:
-        return None
+    info = {'cs_enforcement': offsets}
+    return info
 
 
 def findAMFIMemcmp(data, version):
@@ -256,53 +237,11 @@ def findAMFIMemcmp(data, version):
 
     # 80553718 510718 AMFI::_memcmp CS_Enforcement
 
-    search = {
-        '5.0': [
-            {
-                'pattern': b'\x29\x46\x13\x22\xd0\x47\x01',
-                'old': b'\xd0\x47',
-                'new': b'\x00\x20'
-            }
-        ],
-        '5.0.1': [
-            {
-                'pattern': b'\x29\x46\x13\x22\xd0\x47\x01',
-                'old': b'\xd0\x47',
-                'new': b'\x00\x20'
-            }
-        ],
-        '5.1': [
-            {
-                'pattern': b'\x29\x46\x13\x22\xd0\x47\x01\x21\x40\xb1\x13\x35\x00',
-                'old': b'\xd0\x47',
-                'new': b'\x00\x20'
-            }
-        ],
-        '5.1.1': [
-            {
-                'pattern': b'\x29\x46\x13\x22\xd0\x47',
-                'old': b'\xd0\x47',
-                'new': b'\x00\x20'
-            }
-        ]
-    }
+    search = Pattern(version).AMFIMemcmp()
+    offsets = findPatchOffset(search, data)
 
-    info = {}
-
-    for option in search:
-        if option == version:
-            for patch in search[version]:
-                offset = findPattern(patch['pattern'], data)
-
-                if offset:
-                    match = {offset: patch}
-
-                    info.update(match)
-
-    if info:
-        return info
-    else:
-        return None
+    info = {'amfi_memcmp': offsets}
+    return info
 
 
 def findPE_i_can_has_debugger(data, version):
@@ -333,57 +272,6 @@ def findPE_i_can_has_debugger(data, version):
 
     # 808BDB24 87ab24 debug_enabled PE_i_can_has_debugger AppleImage3NORAccess
 
-    search = {
-        '5.0': [
-            {
-                'pattern': b'\x00\x80\xcd\xf8\x04\x80\x02\x93\xe0\x47\xc0\xbb',
-                'old': b'\xe0\x47',
-                'new': b'\x00\x20'
-            },
-            {
-                'pattern': b'\xe0\x47\x00\x28\x18\xbf\x4f\xf0\x01\x08\x40\x46\x05\xb0',
-                'old': b'\xe0\x47',
-                'new': b'\x00\x20'
-            }
-        ],
-        '5.0.1': [
-            {
-                'pattern': b'\x00\x80\xcd\xf8\x04\x80\x02\x93\xe0\x47\xc0\xbb',
-                'old': b'\xe0\x47',
-                'new': b'\x00\x20'
-            },
-            {
-                'pattern': b'\xe0\x47\x00\x28\x18\xbf\x4f\xf0\x01\x08\x40\x46\x05\xb0',
-                'old': b'\xe0\x47',
-                'new': b'\x00\x20'
-            }
-        ],
-        '5.1': [
-            {
-                'pattern': b'\x00\x80\xcd\xf8\x04\x80\x02\x93\xe0\x47\xc0\xbb',
-                'old': b'\xe0\x47',
-                'new': b'\x00\x20'
-            },
-            {
-                'pattern': b'\xcd\xf8\x04\x80\xcd\xf8\x08\x80\xe0\x47\x00\x28\x18',  # Need to adjust
-                'old': b'\xe0\x47',
-                'new': b'\x00\x20'
-            }
-        ],
-        '5.1.1': [
-            {
-                'pattern': b'\x01\x22\xcd\xf8\x00\x80\xcd\xf8\x04\x80\x02\x93\xe0\x47\xc0',
-                'old': b'\xe0\x47',
-                'new': b'\x00\x20'
-            },
-            {
-                'pattern': b'\xcd\xf8\x04\x80\xcd\xf8\x08\x80\xe0\x47\x00\x28\x18',
-                'old': b'\xe0\x47',
-                'new': b'\x00\x20'
-            }
-        ]
-    }
-
     '''
     com.apple.driver.AppleImage3NORAccess:__TEXT_hidden:808BDB7A DF F8 68 C0                 LDR.W           R12, =(sub_808BD904+1)
     com.apple.driver.AppleImage3NORAccess:__TEXT_hidden:808BDB7E 20 46                       MOV             R0, R4
@@ -400,22 +288,11 @@ def findPE_i_can_has_debugger(data, version):
 
     # 808BDB90 87ab90 debug_enabled PE_i_can_has_debugger AppleImage3NORAccess
 
-    info = {}
+    search = Pattern(version).PE_i_can_has_debugger()
+    offsets = findPatchOffset(search, data)
 
-    for option in search:
-        if option == version:
-            for patch in search[version]:
-                offset = findPattern(patch['pattern'], data)
-
-                if offset:
-                    match = {offset: patch}
-
-                    info.update(match)
-
-    if info:
-        return info
-    else:
-        return None
+    info = {'pe_i_can_has_debugger': offsets}
+    return info
 
 
 def findAppleImage3NORAccess(data, version):
@@ -429,97 +306,6 @@ def findAppleImage3NORAccess(data, version):
     '''
 
     # 808BDFEE 87afef _memcpy AppleImage3NORAccess LLB
-
-    search = {
-        '5.0': [
-            {
-                'pattern': b'\x02\x21\x85\x4c\xa0\x47\x00\x28',
-                'old': b'\x00\x28',
-                'new': b'\x00\x20'
-            },
-            {
-                'pattern': b'\xf2\xd1\x05\x98\x83\x4c\xa0\x47\x00\x28\xed\xd1',
-                'old': b'\x00\x28',
-                'new': b'\x00\x20'
-            },
-            {
-                'pattern': b'\x2b\x4e\x28\x46\x02\x99\xb0\x47',
-                'old': b'\xb0\x47',
-                'new': b'\x01\x20'
-            },
-            {
-                'pattern': b'\x4f\xf0\xff\x31\xa7\xf1\x18\x04\x08\x46\xa5\x46\xbd\xe8\x00\x0d\xf0',
-                'old': b'\x08\x46',
-                'new': b'\x00\x20'
-            }
-        ],
-        '5.0.1': [
-            {
-                'pattern': b'\x02\x21\x85\x4c\xa0\x47\x00\x28',
-                'old': b'\x00\x28',
-                'new': b'\x00\x20'
-            },
-            {
-                'pattern': b'\xf2\xd1\x05\x98\x83\x4c\xa0\x47\x00\x28\xed\xd1',
-                'old': b'\x00\x28',
-                'new': b'\x00\x20'
-            },
-            {
-                'pattern': b'\x2b\x4e\x28\x46\x02\x99\xb0\x47',
-                'old': b'\xb0\x47',
-                'new': b'\x01\x20'
-            },
-            {
-                'pattern': b'\x4f\xf0\xff\x31\xa7\xf1\x18\x04\x08\x46\xa5\x46\xbd\xe8\x00\x0d\xf0',
-                'old': b'\x08\x46',
-                'new': b'\x00\x20'
-            }
-        ],
-        '5.1': [
-            {
-                'pattern': b'\x02\x21\x85\x4c\xa0\x47\x00\x28',
-                'old': b'\x00\x28',
-                'new': b'\x00\x20'
-            },
-            {
-                'pattern': b'\xf2\xd1\x05\x98\x83\x4c\xa0\x47\x00\x28\xed\xd1',
-                'old': b'\x00\x28',
-                'new': b'\x00\x20'
-            },
-            {
-                'pattern': b'\x2b\x4e\x28\x46\x02\x99\xb0\x47',
-                'old': b'\xb0\x47',
-                'new': b'\x01\x20'
-            },
-            {
-                'pattern': b'\x4f\xf0\xff\x31\xa7\xf1\x18\x04\x08\x46\xa5\x46\xbd\xe8\x00\x0d\xf0',
-                'old': b'\x08\x46',
-                'new': b'\x00\x20'
-            }
-        ],
-        '5.1.1': [
-            {
-                'pattern': b'\x02\x21\x85\x4c\xa0\x47\x00\x28',
-                'old': b'\x00\x28',
-                'new': b'\x00\x20'
-            },
-            {
-                'pattern': b'\xf2\xd1\x05\x98\x83\x4c\xa0\x47\x00\x28',
-                'old': b'\x00\x28',
-                'new': b'\x00\x20'
-            },
-            {
-                'pattern': b'\x2b\x4e\x28\x46\x02\x99\xb0\x47',
-                'old': b'\xb0\x47',
-                'new': b'\x01\x20'
-            },
-            {
-                'pattern': b'\xa7\xf1\x18\x04\x08\x46\xa5\x46\xbd\xe8',
-                'old': b'\x08\x46',
-                'new': b'\x00\x20'
-            }
-        ]
-    }
 
     '''
     com.apple.driver.AppleImage3NORAccess:__TEXT_hidden:808BDFF2 05 98                       LDR             R0, [SP,#0x30+var_1C]
@@ -553,22 +339,11 @@ def findAppleImage3NORAccess(data, version):
 
     # 808BF296 87c296 _memcmp AppleImage3NORAccess
 
-    info = {}
+    search = Pattern(version).AppleImage3NORAccess()
+    offsets = findPatchOffset(search, data)
 
-    for option in search:
-        if option == version:
-            for patch in search[version]:
-                offset = findPattern(patch['pattern'], data)
-
-                if offset:
-                    match = {offset: patch}
-
-                    info.update(match)
-
-    if info:
-        return info
-    else:
-        return None
+    info = {'apple_image3_nor_access': offsets}
+    return info
 
 
 def findOffsets(path):
@@ -576,11 +351,10 @@ def findOffsets(path):
 
     version_string = getKernelVersion(data)
 
-    for version in kernel_versions:
-        kernel_string = kernel_versions[version]
-
-        if version_string[-1] == kernel_string:
-            break
+    for major in kernel_versions:
+        for version in kernel_versions[major]:
+            if version_string[-1] == kernel_versions[major][version]:
+                break
 
     offsets = (
         findCSEnforcement(data, version),
