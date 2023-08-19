@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "PyKernelPatch"
+version = "1"
+description = "iOS kernelcache patcher"
+authors = ["Merculous <24739823+Merculous@users.noreply.github.com>"]
+readme = "README.md"
+packages = [{include = "kernelpatch"}]
+license = "MIT"
+repository = "https://github.com/Merculous/PyKernelPatch"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

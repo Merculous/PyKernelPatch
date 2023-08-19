@@ -4,3 +4,4 @@ kernelcache*
 *.json
 __pycache__
 *.pyc
+dist

@@ -16,8 +16,6 @@ def main():
     parser.add_argument('--diff', action='store_true')
     parser.add_argument('--patch', action='store_true')
 
-    parser.add_argument('--test', action='store_true')
-
     args = parser.parse_args()
 
     if args.find:
