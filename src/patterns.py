@@ -59,6 +59,22 @@ mov_r0_r1 = b'\x08\x46'
 
 mov_sp_r4 = b'\xa5\x46'
 
+cbnz_r0_x7c = b'\xc0\xbb'
+
+it_ne = b'\x18\xbf'
+
+movnew_r8_1 = b'\x4f\xf0\x01\x08'
+
+mov_r0_r8 = b'\x40\x46'
+
+add_sp_sp_x14 = b'\x05\xb0'
+
+bne_to_movw_r6_x2e2_second = b'\xed\xd1'
+
+movw_r1_neg1 = b'\x4f\xf0\xff\x31'  # MOVEQ.W         R1, #0xFFFFFFFF
+
+popw_r8_r10_r11 = b'\xbd\xe8\x00\x0d'
+
 
 class Pattern:
     def __init__(self, version):
@@ -102,46 +118,46 @@ class Pattern:
             return (b''.join(pattern),)
 
     def PE_i_can_has_debugger(self):
-        '''
-        '5.0': [
-            {
-                'pattern': b'\x00\x80\xcd\xf8\x04\x80\x02\x93\xe0\x47\xc0\xbb',
-                'old': b'\xe0\x47',
-                'new': b'\x00\x20'
-            },
-            {
-                'pattern': b'\xe0\x47\x00\x28\x18\xbf\x4f\xf0\x01\x08\x40\x46\x05\xb0',
-                'old': b'\xe0\x47',
-                'new': b'\x00\x20'
-            }
-        ],
-        '5.0.1': [
-            {
-                'pattern': b'\x00\x80\xcd\xf8\x04\x80\x02\x93\xe0\x47\xc0\xbb',
-                'old': b'\xe0\x47',
-                'new': b'\x00\x20'
-            },
-            {
-                'pattern': b'\xe0\x47\x00\x28\x18\xbf\x4f\xf0\x01\x08\x40\x46\x05\xb0',
-                'old': b'\xe0\x47',
-                'new': b'\x00\x20'
-            }
-        ],
-        '5.1': [
-            {
-                'pattern': b'\x00\x80\xcd\xf8\x04\x80\x02\x93\xe0\x47\xc0\xbb',
-                'old': b'\xe0\x47',
-                'new': b'\x00\x20'
-            },
-            {
-                'pattern': b'\xcd\xf8\x04\x80\xcd\xf8\x08\x80\xe0\x47\x00\x28\x18',  # Need to adjust
-                'old': b'\xe0\x47',
-                'new': b'\x00\x20'
-            }
-        ],
-        '''
+        if self.version == '5.0' or self.version == '5.0.1':
+            pattern1 = (
+                b'\x00\x80',
+                strw_r8_sp_4,
+                str_r3_sp_8,
+                blx_r12,
+                cbnz_r0_x7c
+            )
 
-        if self.version == '5.1.1':
+            pattern2 = (
+                blx_r12,
+                cmp_r0_0,
+                it_ne,
+                movnew_r8_1,
+                mov_r0_r8,
+                add_sp_sp_x14
+            )
+
+            return (b''.join(pattern1), b''.join(pattern2))
+
+        elif self.version == '5.1':
+            pattern1 = (
+                b'\x00\x80',
+                strw_r8_sp_4,
+                str_r3_sp_8,
+                blx_r12,
+                cbnz_r0_x7c
+            )
+
+            pattern2 = (
+                strw_r8_sp_4,
+                strw_r8_sp_8,
+                blx_r12,
+                cmp_r0_0,
+                b'\x18'
+            )
+
+            return (b''.join(pattern1), b''.join(pattern2))
+
+        elif self.version == '5.1.1':
             pattern1 = (
                 movs_r2_1,
                 strw_r8_sp,
@@ -163,76 +179,45 @@ class Pattern:
             return (b''.join(pattern1), b''.join(pattern2))
 
     def AppleImage3NORAccess(self):
-        '''
-        '5.0': [
-            {
-                'pattern': b'\x02\x21\x85\x4c\xa0\x47\x00\x28',
-                'old': b'\x00\x28',
-                'new': b'\x00\x20'
-            },
-            {
-                'pattern': b'\xf2\xd1\x05\x98\x83\x4c\xa0\x47\x00\x28\xed\xd1',
-                'old': b'\x00\x28',
-                'new': b'\x00\x20'
-            },
-            {
-                'pattern': b'\x2b\x4e\x28\x46\x02\x99\xb0\x47',
-                'old': b'\xb0\x47',
-                'new': b'\x01\x20'
-            },
-            {
-                'pattern': b'\x4f\xf0\xff\x31\xa7\xf1\x18\x04\x08\x46\xa5\x46\xbd\xe8\x00\x0d\xf0',
-                'old': b'\x08\x46',
-                'new': b'\x00\x20'
-            }
-        ],
-        '5.0.1': [
-            {
-                'pattern': b'\x02\x21\x85\x4c\xa0\x47\x00\x28',
-                'old': b'\x00\x28',
-                'new': b'\x00\x20'
-            },
-            {
-                'pattern': b'\xf2\xd1\x05\x98\x83\x4c\xa0\x47\x00\x28\xed\xd1',
-                'old': b'\x00\x28',
-                'new': b'\x00\x20'
-            },
-            {
-                'pattern': b'\x2b\x4e\x28\x46\x02\x99\xb0\x47',
-                'old': b'\xb0\x47',
-                'new': b'\x01\x20'
-            },
-            {
-                'pattern': b'\x4f\xf0\xff\x31\xa7\xf1\x18\x04\x08\x46\xa5\x46\xbd\xe8\x00\x0d\xf0',
-                'old': b'\x08\x46',
-                'new': b'\x00\x20'
-            }
-        ],
-        '5.1': [
-            {
-                'pattern': b'\x02\x21\x85\x4c\xa0\x47\x00\x28',
-                'old': b'\x00\x28',
-                'new': b'\x00\x20'
-            },
-            {
-                'pattern': b'\xf2\xd1\x05\x98\x83\x4c\xa0\x47\x00\x28\xed\xd1',
-                'old': b'\x00\x28',
-                'new': b'\x00\x20'
-            },
-            {
-                'pattern': b'\x2b\x4e\x28\x46\x02\x99\xb0\x47',
-                'old': b'\xb0\x47',
-                'new': b'\x01\x20'
-            },
-            {
-                'pattern': b'\x4f\xf0\xff\x31\xa7\xf1\x18\x04\x08\x46\xa5\x46\xbd\xe8\x00\x0d\xf0',
-                'old': b'\x08\x46',
-                'new': b'\x00\x20'
-            }
-        ],
-        '''
+        if self.version == '5.0' or self.version == '5.0.1' or self.version == '5.1':
+            pattern1 = (
+                movs_r1_2,
+                ldr_r4_pc_x214,
+                blx_r4,
+                cmp_r0_0
+            )
 
-        if self.version == '5.1.1':
+            pattern2 = (
+                bne_to_movw_r6_x2e2,
+                ldr_r0_sp_x14,
+                ldr_r4_pc_x20c,
+                blx_r4,
+                cmp_r0_0,
+                bne_to_movw_r6_x2e2_second
+            )
+
+            # Fails on 5.0 and 5.1
+
+            pattern3 = (
+                ldr_r6_pc_xac,
+                mov_r0_r5,
+                ldr_r1_sp_8,
+                blx_r6
+            )
+
+            # Fails on 5.0.1
+
+            pattern4 = (
+                movw_r1_neg1,
+                subw_r4_r7_x18,
+                mov_r0_r1,
+                mov_sp_r4,
+                popw_r8_r10_r11
+            )
+
+            return (b''.join(pattern1), b''.join(pattern2), b''.join(pattern3), b''.join(pattern4))
+
+        elif self.version == '5.1.1':
             pattern1 = (
                 movs_r1_2,
                 ldr_r4_pc_x214,
