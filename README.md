@@ -27,10 +27,10 @@ in this project.
 
 # What versions and devices are supported
 
-So far, iOS 5.x are supported, but only iOS 5.0.1 and 5.1.1 are for sure exact
-patches. I have only restored to 5.1.1, which works, but 5.0.1 should work too.
-I tried to use the patches between 5.0.1 and 5.1.1 to create 5.0 and 5.1 patches
-as sn0wbreeze does not come with 5.0 or 5.1 support, at least for the iPhone 3GS.
+So far, iOS 5.x are supported, but I have only restored to 5.1.1, which works.
+The other versions should work the same. I've managed to get 5.x kernels to patch
+with the same patches. I used the patches between 5.0.1 and 5.1.1 to create 5.0 and 5.1
+patches as sn0wbreeze does not come with 5.0 or 5.1 support, at least for the iPhone 3GS.
 I will be testing soon and will give updates on new iOS support. So only the iPhone
 3GS is supported, but patches could also be used on another device's kernel, however
 I can't guarantee anything for now.

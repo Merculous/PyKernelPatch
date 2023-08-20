@@ -30,6 +30,8 @@ def patchOffset(old, new, offset, data):
 
     return offsets_found
 
+# Patch count: 1
+
 
 def patchCSEnforcement(info, data):
     patched = 0
@@ -43,6 +45,8 @@ def patchCSEnforcement(info, data):
         patched += offsets_patched
 
     return patched
+
+# Patch count: 1
 
 
 def patchAMFIMemcmp(info, data):
@@ -58,6 +62,8 @@ def patchAMFIMemcmp(info, data):
 
     return patched
 
+# Patch count: 2
+
 
 def patchPE_i_can_has_debugger(info, data):
     patched = 0
@@ -71,6 +77,8 @@ def patchPE_i_can_has_debugger(info, data):
         patched += offsets_patched
 
     return patched
+
+# Patch count: 4
 
 
 def patchAppleImage3NORAccess(info, data):

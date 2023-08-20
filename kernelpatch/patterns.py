@@ -88,7 +88,16 @@ class Pattern:
         return (b''.join(pattern),)
 
     def AMFIMemcmp(self):
-        if self.version == '5.0' or self.version == '5.0.1':
+        if self.version == '5.0':
+            pattern = (
+                mov_r1_r5,
+                movs_r2_x13,
+                blx_r10,
+                movs_r1_1
+            )
+            return (b''.join(pattern),)
+
+        elif self.version == '5.0.1':
             pattern = (
                 mov_r1_r5,
                 movs_r2_x13,
@@ -152,7 +161,8 @@ class Pattern:
                 strw_r8_sp_8,
                 blx_r12,
                 cmp_r0_0,
-                b'\x18'
+                it_ne,
+                movnew_r8_1
             )
 
             return (b''.join(pattern1), b''.join(pattern2))
@@ -196,8 +206,6 @@ class Pattern:
                 bne_to_movw_r6_x2e2_second
             )
 
-            # Fails on 5.0 and 5.1
-
             pattern3 = (
                 ldr_r6_pc_xac,
                 mov_r0_r5,
@@ -205,15 +213,24 @@ class Pattern:
                 blx_r6
             )
 
-            # Fails on 5.0.1
+            if self.version == '5.0' or self.version == '5.0.1' or self.version == '5.1':
+                pattern4 = (
+                    movw_r1_neg1,
+                    subw_r4_r7_x18,
+                    mov_r0_r1,
+                    mov_sp_r4,
+                    popw_r8_r10_r11,
+                    b'\xf0'
+                )
 
-            pattern4 = (
-                movw_r1_neg1,
-                subw_r4_r7_x18,
-                mov_r0_r1,
-                mov_sp_r4,
-                popw_r8_r10_r11
-            )
+            else:
+                pattern4 = (
+                    movw_r1_neg1,
+                    subw_r4_r7_x18,
+                    mov_r0_r1,
+                    mov_sp_r4,
+                    popw_r8_r10_r11
+                )
 
             return (b''.join(pattern1), b''.join(pattern2), b''.join(pattern3), b''.join(pattern4))
 
