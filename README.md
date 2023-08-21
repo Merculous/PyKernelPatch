@@ -1,4 +1,3 @@
-
 # About the project
 
 This is a WIP iOS 32-bit (atm) kernel patcher. The project is by all means
@@ -17,25 +16,28 @@ That requires more patches, but will be added to this project eventually.
 # What's being patched
 
 Unfortunately, I'm not fully certain what these patches do, however I know that
-the patches that are being used tie into codesigning and I believe a few things
-regarding the AppleImage3NORAccess.kext. I'm not aware exactly what is being
-patched, but the patches that are being used are derived from the sn0wbreeze
-project, which provides patched iOS ipsw's which can be used to either jailbreak
-or to preserve the baseband that comes with the ipsw. So far, the patches that
-are from the baseband preservation mode that sn0wbreeze offers are being used
-in this project.
+the patches that are being used tie into codesigning, amfi, signature checking,
+and more. I'm not aware exactly what is being patched, but the patches that are
+being used are derived from the sn0wbreeze project, which provides patched iOS
+ipsw's which can be used to either jailbreak or to preserve the baseband that
+comes with the ipsw. So far, the patches that are from the baseband preservation
+mode that sn0wbreeze offers are being used in this project.
 
 # What versions and devices are supported
 
-So far, iOS 5.x are supported, but I have only restored to 5.1.1, which works.
-The other versions should work the same. I've managed to get 5.x kernels to patch
-with the same patches. I used the patches between 5.0.1 and 5.1.1 to create 5.0 and 5.1
-patches as sn0wbreeze does not come with 5.0 or 5.1 support, at least for the iPhone 3GS.
-I will be testing soon and will give updates on new iOS support. So only the iPhone
-3GS is supported, but patches could also be used on another device's kernel, however
-I can't guarantee anything for now.
+So far, iOS 5.x is supported for iPhone 3GS. The patches themselves should be
+very close or exactly the same. Only real differences between devices is where
+everything gets loaded. 5.x have been tested and all of them restore without
+issues.
 
 # Additional functionality
 
 This project also provides a diff function, although it needs updating. Note,
 when diffing two kernels, they must be the same size.
+
+# Issues
+
+iOS 4 and 6 are not supported currently. I'm not aware of what needs to be fixed,
+but I will look into it when I get the chance. For iOS 6, it is restored_external
+related. I'm not sure what to do, however it involves tickets. I'm assuming ApTicket?
+Anyway, I will be focusing on adding jailbreak support for iOS 5 for now.
