@@ -32,30 +32,27 @@ kernel_versions = {
 # 80043000
 
 
-def findPattern(pattern, data, look_back=4, look_ahead=4):
+def findPattern(pattern, data):
     data_len = len(data)
     pattern_len = len(pattern)
 
     found = None
 
     for i in range(0, data_len, pattern_len):
-        look_back_buffer = data[i-look_back:i]
+        look_back_buffer = data[i-4:i]
 
         buffer = data[i:i+pattern_len]
 
-        look_ahead_buffer = data[i+pattern_len:i+pattern_len+look_ahead]
+        look_ahead_buffer = data[i+pattern_len:i+pattern_len+4]
 
         window = look_back_buffer + buffer + look_ahead_buffer
 
         if pattern == buffer:
             found = hex(i)
 
-        # TODO
-        # Actually add the dynamic nature of look_back and look_ahead
-
         else:
             if pattern in window:
-                found = hex(i-look_back)
+                found = hex(i-4)
             else:
                 window = b''
 

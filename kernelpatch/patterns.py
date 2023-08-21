@@ -126,6 +126,10 @@ class Pattern:
             )
             return (b''.join(pattern),)
 
+    # Function below isn't even close to PE_i_can_has_debugger.
+    # That flag is actually very easy to find. This is a different
+    # patch, which I don't know what it does right now.
+
     def PE_i_can_has_debugger(self):
         if self.version == '5.0' or self.version == '5.0.1':
             pattern1 = (
@@ -187,6 +191,9 @@ class Pattern:
             )
 
             return (b''.join(pattern1), b''.join(pattern2))
+
+    # Patch 4 in below function is actually the pattern/patch stuff
+    # to patch out signature checking.
 
     def AppleImage3NORAccess(self):
         if self.version == '5.0' or self.version == '5.0.1' or self.version == '5.1':
@@ -265,3 +272,36 @@ class Pattern:
             )
 
             return (b''.join(pattern1), b''.join(pattern2), b''.join(pattern3), b''.join(pattern4))
+
+    def signatureCheck(self):
+        pass
+
+    def vm_map_enter(self):
+        pass
+
+    def flush_dcache(self):
+        pass
+
+    def flush_icache(self):
+        pass
+
+    def tfp0(self):
+        pass
+
+    def real_PE_i_can_has_debugger(self):
+        pass
+
+    def syscall0(self):
+        pass
+
+    def syscall0_value(self):
+        pass
+
+    def nx_enable(self):
+        pass
+
+    def io_log(self):
+        pass
+
+    def AMFIHook(self):
+        pass
