@@ -1,4 +1,6 @@
 
+from .utils import joinBytePattern
+
 ldr_r2_r4_x28 = b'\xa2\x6a'
 
 ldr_r3_r3 = b'\x1b\x68'
@@ -75,19 +77,45 @@ movw_r1_neg1 = b'\x4f\xf0\xff\x31'  # MOVEQ.W         R1, #0xFFFFFFFF
 
 popw_r8_r10_r11 = b'\xbd\xe8\x00\x0d'
 
+cmp_r0_6 = b'\x06\x28'
+
+andw_r0_r1_6 = b'\x01\xf0\x06\x00'
+
+str_r1_sp_4 = b'\x01\x91'
+
+bne_x16 = b'\x06\xd1'
+
+blx_r2 = b'\x90\x47'
+
+b_x23a = b'\x19\xe1'
+
+cbz_r0_x12 = b'\x38\xb1'
+
+ldr_r1_pc_x14 = b'\x05\x49'
+
+ldr_r1_r1 = b'\x09\x68'
+
+ldr_r0_pc_4 = b'\x01\x48'
+
+ldr_r0_r0 = b'\x00\x68'
+
+bx_lr = b'\x70\x47'
+
+str_r1_r0 = b'\x01\x60'
+
 
 class Pattern:
     def __init__(self, version):
         self.version = version
 
-    def CSEnforcement(self):
+    def form_CSEnforcement(self):
         pattern = (
             ldr_r2_r4_x28,
             ldr_r3_r3
         )
         return (b''.join(pattern),)
 
-    def AMFIMemcmp(self):
+    def form_AMFIMemcmp(self):
         if self.version == '5.0':
             pattern = (
                 mov_r1_r5,
@@ -126,35 +154,26 @@ class Pattern:
             )
             return (b''.join(pattern),)
 
-    # Function below isn't even close to PE_i_can_has_debugger.
-    # That flag is actually very easy to find. This is a different
-    # patch, which I don't know what it does right now.
-
-    def PE_i_can_has_debugger(self):
-        if self.version == '5.0' or self.version == '5.0.1':
+    def form_PE_i_can_has_debugger(self):
+        if self.version == '5.1.1':
             pattern1 = (
-                b'\x00\x80',
-                strw_r8_sp_4,
-                str_r3_sp_8,
-                blx_r12,
-                cbnz_r0_x7c
+                cbz_r0_x12,
+                ldr_r1_pc_x14,
+                ldr_r1_r1
             )
 
             pattern2 = (
-                blx_r12,
-                cmp_r0_0,
-                it_ne,
-                movnew_r8_1,
-                mov_r0_r8,
-                add_sp_sp_x14
+                str_r1_r0,
+                ldr_r0_pc_4,
+                ldr_r0_r0,
+                bx_lr
             )
 
             return (b''.join(pattern1), b''.join(pattern2))
 
-        elif self.version == '5.1':
+    def form_AppleImage3NORAccess(self):
+        if self.version == '5.1.1':
             pattern1 = (
-                b'\x00\x80',
-                strw_r8_sp_4,
                 str_r3_sp_8,
                 blx_r12,
                 cbnz_r0_x7c
@@ -164,144 +183,102 @@ class Pattern:
                 strw_r8_sp_4,
                 strw_r8_sp_8,
                 blx_r12,
-                cmp_r0_0,
-                it_ne,
-                movnew_r8_1
-            )
-
-            return (b''.join(pattern1), b''.join(pattern2))
-
-        elif self.version == '5.1.1':
-            pattern1 = (
-                movs_r2_1,
-                strw_r8_sp,
-                strw_r8_sp_4,
-                str_r3_sp_8,
-                blx_r12,
-                b'\xc0'
-            )
-
-            pattern2 = (
-                strw_r8_sp,
-                strw_r8_sp_4,
-                strw_r8_sp_8,
-                blx_r12,
-                cmp_r0_0,
-                b'\x18'
-            )
-
-            return (b''.join(pattern1), b''.join(pattern2))
-
-    # Patch 4 in below function is actually the pattern/patch stuff
-    # to patch out signature checking.
-
-    def AppleImage3NORAccess(self):
-        if self.version == '5.0' or self.version == '5.0.1' or self.version == '5.1':
-            pattern1 = (
-                movs_r1_2,
-                ldr_r4_pc_x214,
-                blx_r4,
-                cmp_r0_0
-            )
-
-            pattern2 = (
-                bne_to_movw_r6_x2e2,
-                ldr_r0_sp_x14,
-                ldr_r4_pc_x20c,
-                blx_r4,
-                cmp_r0_0,
-                bne_to_movw_r6_x2e2_second
-            )
-
-            pattern3 = (
-                ldr_r6_pc_xac,
-                mov_r0_r5,
-                ldr_r1_sp_8,
-                blx_r6
-            )
-
-            if self.version == '5.0' or self.version == '5.0.1' or self.version == '5.1':
-                pattern4 = (
-                    movw_r1_neg1,
-                    subw_r4_r7_x18,
-                    mov_r0_r1,
-                    mov_sp_r4,
-                    popw_r8_r10_r11,
-                    b'\xf0'
-                )
-
-            else:
-                pattern4 = (
-                    movw_r1_neg1,
-                    subw_r4_r7_x18,
-                    mov_r0_r1,
-                    mov_sp_r4,
-                    popw_r8_r10_r11
-                )
-
-            return (b''.join(pattern1), b''.join(pattern2), b''.join(pattern3), b''.join(pattern4))
-
-        elif self.version == '5.1.1':
-            pattern1 = (
-                movs_r1_2,
-                ldr_r4_pc_x214,
-                blx_r4,
-                cmp_r0_0
-            )
-
-            pattern2 = (
-                bne_to_movw_r6_x2e2,
-                ldr_r0_sp_x14,
-                ldr_r4_pc_x20c,
-                blx_r4,
                 cmp_r0_0
             )
 
             pattern3 = (
-                ldr_r6_pc_xac,
-                mov_r0_r5,
-                ldr_r1_sp_8,
-                blx_r6
+                ldr_r4_pc_x214,
+                blx_r4,
+                cmp_r0_0,
+                bne_to_movw_r6_x2e2
             )
 
             pattern4 = (
+                ldr_r4_pc_x20c,
+                blx_r4,
+                cmp_r0_0
+            )
+
+            pattern5 = (
+                ldr_r1_sp_8,
+                blx_r6,
+                cmp_r0_0
+            )
+
+            patterns = (
+                b''.join(pattern1),
+                b''.join(pattern2),
+                b''.join(pattern3),
+                b''.join(pattern4),
+                b''.join(pattern5),
+            )
+
+            return patterns
+
+    def form_signatureCheck(self):
+        if self.version == '5.0' or self.version == '5.0.1' or self.version == '5.1':
+            pattern = (
+                movw_r1_neg1,
                 subw_r4_r7_x18,
                 mov_r0_r1,
                 mov_sp_r4,
-                b'\xbd\xe8'
+                popw_r8_r10_r11,
+                b'\xf0'
             )
 
-            return (b''.join(pattern1), b''.join(pattern2), b''.join(pattern3), b''.join(pattern4))
+        else:
+            pattern = (
+                movw_r1_neg1,
+                subw_r4_r7_x18,
+                mov_r0_r1,
+                mov_sp_r4,
+                popw_r8_r10_r11
+            )
 
-    def signatureCheck(self):
+            return (b''.join(pattern),)
+
+    def form_vm_map_enter(self):
+        if self.version == '5.1.1':
+            pattern = (
+                andw_r0_r1_6,
+                cmp_r0_6
+            )
+
+            return (b''.join(pattern),)
+
+    def form_flush_dcache(self):
         pass
 
-    def vm_map_enter(self):
+    def form_flush_icache(self):
         pass
 
-    def flush_dcache(self):
+    def form_tfp0(self):
+        if self.version == '5.1.1':
+            pattern = (
+                str_r1_sp_4,
+                bne_x16
+            )
+
+            return (b''.join(pattern),)
+
+    def form_syscall0(self):
         pass
 
-    def flush_icache(self):
+    def form_syscall0_value(self):
         pass
 
-    def tfp0(self):
+    def form_nx_enable(self):
         pass
 
-    def real_PE_i_can_has_debugger(self):
+    def form_io_log(self):
         pass
 
-    def syscall0(self):
-        pass
+    def form_AMFIHook(self):
+        if self.version == '5.1.1':
+            pattern = (
+                mov_r0_r5,
+                blx_r2,
+                b_x23a
+            )
 
-    def syscall0_value(self):
-        pass
-
-    def nx_enable(self):
-        pass
-
-    def io_log(self):
-        pass
-
-    def AMFIHook(self):
-        pass
+            return (b''.join(pattern),)

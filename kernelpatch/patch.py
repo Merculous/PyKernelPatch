@@ -1,130 +1,96 @@
 
-from .file import readBinaryFile, writeBinaryFile
-from .find import findOffsets
-from .utils import formatBytes
+from .find import Find
 
 
-def patchOffset(old, new, offset, data):
-    i = int(offset[2:], 16)
+class Patch(Find):
+    def __init__(self, data):
+        super().__init__(data)
 
-    pattern_len = len(old)
+        self.offsets = self.findOffsets()
+        self.patched_data = bytearray(self.data[:])
 
-    buffer = data[i:i+pattern_len]
+    def patchOffset(self, old, new, offset):
+        i = int(offset[2:], 16)
 
-    offsets_found = 0
+        pattern_len = len(old)
 
-    if old in buffer:
-        print(f'Found pattern at offset: {offset}')
+        buffer = self.patched_data[i:i+pattern_len]
 
-        new_buffer = buffer.replace(old, new)
+        if old in buffer:
+            new_buffer = buffer.replace(old, new)
+            self.patched_data[i:i+pattern_len] = new_buffer
 
-        old_hex = formatBytes(old)
-        new_hex = formatBytes(new)
-
-        # FIXME
-        print(f'Patching: {old_hex} to {new_hex}')
-
-        data[i:i+pattern_len] = new_buffer
-
-        offsets_found += 1
-
-    return offsets_found
-
-# Patch count: 1
-
-
-def patchCSEnforcement(info, data):
-    patched = 0
-
-    for offset in info:
-        pattern = info[offset]
+    def patch_CSEnforcement(self, offset, pattern):
         new_pattern = pattern.replace(b'\x1b\x68', b'\x01\x23')
+        self.patchOffset(pattern, new_pattern, offset)
 
-        offsets_patched = patchOffset(pattern, new_pattern, offset, data)
+    def patch_Vm_map_enter(self, offset, pattern):
+        new_pattern = pattern.replace(b'\x06\x28', b'\xff\x28')
+        self.patchOffset(pattern, new_pattern, offset)
 
-        patched += offsets_patched
+    def patch_Tfp0(self, offset, pattern):
+        new_pattern = pattern.replace(b'\x06\xd1', b'\x06\xe0')
+        self.patchOffset(pattern, new_pattern, offset)
 
-    return patched
+    def patch_PE_i_can_has_debugger(self, offset, pattern):
+        if b'\x38\xb1\x05\x49' in pattern:
+            new_pattern = pattern.replace(b'\x38\xb1\x05\x49', b'\x01\x20\x70\x47')
+            self.patchOffset(pattern, new_pattern, offset)
 
-# Patch count: 1
+        elif b'\x00\x68' in pattern:
+            new_pattern = pattern.replace(b'\x00\x68', b'\x01\x20')
+            self.patchOffset(pattern, new_pattern, offset)
 
+    def patch_AMFIHook(self, offset, pattern):
+        new_pattern = pattern.replace(b'\x90\x47', b'\xc0\x46')
+        self.patchOffset(pattern, new_pattern, offset)
 
-def patchAMFIMemcmp(info, data):
-    patched = 0
-
-    for offset in info:
-        pattern = info[offset]
+    def patch_AMFIMemcmp(self, offset, pattern):
         new_pattern = pattern.replace(b'\xd0\x47', b'\x00\x20')
+        self.patchOffset(pattern, new_pattern, offset)
 
-        offsets_patched = patchOffset(pattern, new_pattern, offset, data)
+    def patch_AppleImage3NORAccess(self, offset, pattern):
+        if b'\xe0\x47' in pattern:
+            new_pattern = pattern.replace(b'\xe0\x47', b'\x00\x20')
 
-        patched += offsets_patched
-
-    return patched
-
-# Patch count: 2
-
-
-def patchPE_i_can_has_debugger(info, data):
-    patched = 0
-
-    for offset in info:
-        pattern = info[offset]
-        new_pattern = pattern.replace(b'\xe0\x47', b'\x00\x20')
-
-        offsets_patched = patchOffset(pattern, new_pattern, offset, data)
-
-        patched += offsets_patched
-
-    return patched
-
-# Patch count: 4
-
-
-def patchAppleImage3NORAccess(info, data):
-    patched = 0
-
-    for offset in info:
-        pattern = info[offset]
-
-        if b'\x00\x28' in pattern:
+        elif b'\x00\x28' in pattern:
             new_pattern = pattern.replace(b'\x00\x28', b'\x00\x20')
 
         elif b'\xb0\x47' in pattern:
             new_pattern = pattern.replace(b'\xb0\x47', b'\x01\x20')
 
-        elif b'\x08\x46' in pattern:
-            new_pattern = pattern.replace(b'\x08\x46', b'\x00\x20')
+        self.patchOffset(pattern, new_pattern, offset)
 
-        offsets_patched = patchOffset(pattern, new_pattern, offset, data)
+    def patch_SignatureCheck(self, offset, pattern):
+        new_pattern = pattern.replace(b'\x08\x46', b'\x00\x20')
+        self.patchOffset(pattern, new_pattern, offset)
 
-        patched += offsets_patched
+    def patchKernel(self, patched):
+        for offset in self.offsets:
+            offset, name, pattern = offset
 
-    return patched
+            if name == 'cs_enforcement':
+                self.patch_CSEnforcement(offset, pattern)
 
+            elif name == 'vm_map_enter':
+                self.patch_Vm_map_enter(offset, pattern)
 
-def patchKernel(orig, patched):
-    data = readBinaryFile(orig)
+            elif name == 'tfp0':
+                self.patch_Tfp0(offset, pattern)
 
-    # This will be the data we modify
-    new_data = bytearray(data[:])
+            elif name == 'pe_i_can_has_debugger':
+                self.patch_PE_i_can_has_debugger(offset, pattern)
 
-    offsets = findOffsets(orig)
+            elif name == 'amfi_hook':
+                self.patch_AMFIHook(offset, pattern)
 
-    offsets_possible = 8
+            elif name == 'amfi_memcmp':
+                self.patch_AMFIMemcmp(offset, pattern)
 
-    patch_count1 = patchCSEnforcement(offsets['cs_enforcement'], new_data)
-    patch_count2 = patchAMFIMemcmp(offsets['amfi_memcmp'], new_data)
-    patch_count3 = patchPE_i_can_has_debugger(offsets['pe_i_can_has_debugger'], new_data)
-    patch_count4 = patchAppleImage3NORAccess(offsets['apple_image3_nor_access'], new_data)
+            elif name == 'apple_image3_nor_access':
+                self.patch_AppleImage3NORAccess(offset, pattern)
 
-    # new_data should be patched now
+            elif name == 'sig_check':
+                self.patch_SignatureCheck(offset, pattern)
 
-    offsets_found = patch_count1 + patch_count2 + patch_count3 + patch_count4
-
-    if offsets_found != offsets_possible:
-        print(f'Found {offsets_found}/{offsets_possible} offsets!')
-    else:
-        print('Found all offsets!')
-
-    writeBinaryFile(new_data, patched)
+        return self.patched_data

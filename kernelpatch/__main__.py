@@ -2,9 +2,9 @@
 from argparse import ArgumentParser
 
 from .diff import diffKernels
-from .find import findOffsets
+from .file import readBinaryFile, writeBinaryFile
 from .json import writeJSON, writeOffsetsToJSON
-from .patch import patchKernel
+from .patch import Patch
 
 
 def main():
@@ -20,7 +20,8 @@ def main():
 
     if args.find:
         if args.orig and not args.patched:
-            offsets = findOffsets(args.orig[0])
+            data = readBinaryFile(args.orig[0])
+            offsets = Patch(data).findOffsets()
             writeOffsetsToJSON(offsets, 'offsets.json')
 
     elif args.diff:
@@ -30,7 +31,9 @@ def main():
 
     elif args.patch:
         if args.orig and args.patched:
-            patchKernel(args.orig[0], args.patched[0])
+            data = readBinaryFile(args.orig[0])
+            patched_data = Patch(data).patchKernel(args.patched[0])
+            writeBinaryFile(patched_data, args.patched[0])
 
     else:
         parser.print_help()
