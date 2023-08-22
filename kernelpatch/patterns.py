@@ -1,6 +1,4 @@
 
-from .utils import joinBytePattern
-
 ldr_r2_r4_x28 = b'\xa2\x6a'
 
 ldr_r3_r3 = b'\x1b\x68'
