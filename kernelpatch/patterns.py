@@ -1,4 +1,7 @@
 
+from .utils import joinPatterns
+
+
 class Pattern:
     instructions = {
         'ldr': {
@@ -77,6 +80,7 @@ class Pattern:
         },
         'add': {
             'add_sp_sp_x14': b'\x05\xb0',
+
             'adds_r5_x13': b'\x13\x35'
         },
         'it': {
@@ -127,7 +131,7 @@ class Pattern:
             self.getHex('ldr_r2_r4_x28'),
             self.getHex('ldr_r3_r3')
         )
-        return (b''.join(pattern),)
+        return joinPatterns(pattern)
 
     def form_AMFIMemcmp(self):
         if self.version == '5.0':
@@ -137,7 +141,7 @@ class Pattern:
                 self.getHex('blx_r10'),
                 self.getHex('movs_r1_1')
             )
-            return (b''.join(pattern),)
+            return joinPatterns(pattern)
 
         elif self.version == '5.0.1':
             pattern = (
@@ -146,7 +150,7 @@ class Pattern:
                 self.getHex('blx_r10'),
                 b'\x01'
             )
-            return (b''.join(pattern),)
+            return joinPatterns(pattern)
 
         elif self.version == '5.1':
             pattern = (
@@ -158,7 +162,7 @@ class Pattern:
                 self.getHex('adds_r5_x13'),
                 b'\x00'
             )
-            return (b''.join(pattern),)
+            return joinPatterns(pattern)
 
         elif self.version == '5.1.1':
             pattern = (
@@ -166,7 +170,7 @@ class Pattern:
                 self.getHex('movs_r2_x13'),
                 self.getHex('blx_r10')
             )
-            return (b''.join(pattern),)
+            return joinPatterns(pattern)
 
     def form_PE_i_can_has_debugger(self):
         if self.version == '5.1.1':
@@ -183,7 +187,7 @@ class Pattern:
                 self.getHex('bx_lr')
             )
 
-            return (b''.join(pattern1), b''.join(pattern2))
+            return joinPatterns(pattern1, pattern2)
 
     def form_AppleImage3NORAccess(self):
         if self.version == '5.1.1':
@@ -219,15 +223,13 @@ class Pattern:
                 self.getHex('cmp_r0_0')
             )
 
-            patterns = (
-                b''.join(pattern1),
-                b''.join(pattern2),
-                b''.join(pattern3),
-                b''.join(pattern4),
-                b''.join(pattern5),
+            return joinPatterns(
+                pattern1,
+                pattern2,
+                pattern3,
+                pattern4,
+                pattern5
             )
-
-            return patterns
 
     def form_signatureCheck(self):
         if self.version == '5.0' or self.version == '5.0.1' or self.version == '5.1':
@@ -249,7 +251,7 @@ class Pattern:
                 self.getHex('popw_r8_r10_r11')
             )
 
-            return (b''.join(pattern),)
+            return joinPatterns(pattern)
 
     def form_vm_map_enter(self):
         if self.version == '5.1.1':
@@ -258,7 +260,7 @@ class Pattern:
                 self.getHex('cmp_r0_6')
             )
 
-            return (b''.join(pattern),)
+            return joinPatterns(pattern)
 
     def form_flush_dcache(self):
         pass
@@ -273,7 +275,7 @@ class Pattern:
                 self.getHex('bne_x16')
             )
 
-            return (b''.join(pattern),)
+            return joinPatterns(pattern)
 
     def form_syscall0(self):
         pass
@@ -295,4 +297,4 @@ class Pattern:
                 self.getHex('b_x23a')
             )
 
-            return (b''.join(pattern),)
+            return joinPatterns(pattern)
