@@ -12,3 +12,7 @@ def formatBytes(data):
 
 def joinPatterns(*data):
     return tuple([b''.join(p) for p in data])
+
+
+def hexString_to_hexInt(data):
+    return int(data[2:], 16)

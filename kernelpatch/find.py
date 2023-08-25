@@ -1,6 +1,6 @@
 
 from .patterns import Pattern
-from .utils import convertHexToBytes, formatBytes
+from .utils import convertHexToBytes, formatBytes, hexString_to_hexInt
 
 
 class Find:
@@ -126,7 +126,7 @@ class Find:
 
         extra = len(version_string) + 75
 
-        i = int(version_string_offset[2:], 16)
+        i = hexString_to_hexInt(version_string_offset)
 
         buffer_end = i + extra
 
@@ -143,7 +143,7 @@ class Find:
             raise Exception('Buffer does not start with kernel version string!')
 
         new_i_hex = hex(buffer_end + 8)
-        new_i = int(new_i_hex[2:], 16)
+        new_i = hexString_to_hexInt(new_i_hex)
 
         start = i + version_string_index // 2
         start_hex = hex(start)
@@ -236,7 +236,7 @@ class Find:
             for offset in info[name]:
                 offsets.append(offset)
 
-        offsets = sorted([int(o[2:], 16) for o in offsets])
+        offsets = sorted([hexString_to_hexInt(o) for o in offsets])
 
         offsets = [hex(o) for o in offsets]
 
