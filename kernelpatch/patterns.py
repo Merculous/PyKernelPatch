@@ -190,68 +190,56 @@ class Pattern:
             return joinPatterns(pattern1, pattern2)
 
     def form_AppleImage3NORAccess(self):
-        if self.version == '5.1.1':
-            pattern1 = (
-                self.getHex('str_r3_sp_8'),
-                self.getHex('blx_r12'),
-                self.getHex('cbnz_r0_x7c')
-            )
+        pattern1 = (
+            self.getHex('str_r3_sp_8'),
+            self.getHex('blx_r12'),
+            self.getHex('cbnz_r0_x7c')
+        )
 
-            pattern2 = (
-                self.getHex('strw_r8_sp_4'),
-                self.getHex('strw_r8_sp_8'),
-                self.getHex('blx_r12'),
-                self.getHex('cmp_r0_0')
-            )
+        pattern2 = (
+            self.getHex('strw_r8_sp_4'),
+            self.getHex('strw_r8_sp_8'),
+            self.getHex('blx_r12'),
+            self.getHex('cmp_r0_0')
+        )
 
-            pattern3 = (
-                self.getHex('ldr_r4_pc_x214'),
-                self.getHex('blx_r4'),
-                self.getHex('cmp_r0_0'),
-                self.getHex('bne_to_movw_r6_x2e2')
-            )
+        pattern3 = (
+            self.getHex('ldr_r4_pc_x214'),
+            self.getHex('blx_r4'),
+            self.getHex('cmp_r0_0'),
+            self.getHex('bne_to_movw_r6_x2e2')
+        )
 
-            pattern4 = (
-                self.getHex('ldr_r4_pc_x20c'),
-                self.getHex('blx_r4'),
-                self.getHex('cmp_r0_0')
-            )
+        pattern4 = (
+            self.getHex('ldr_r4_pc_x20c'),
+            self.getHex('blx_r4'),
+            self.getHex('cmp_r0_0')
+        )
 
-            pattern5 = (
-                self.getHex('ldr_r1_sp_8'),
-                self.getHex('blx_r6'),
-                self.getHex('cmp_r0_0')
-            )
+        pattern5 = (
+            self.getHex('ldr_r1_sp_8'),
+            self.getHex('blx_r6'),
+            self.getHex('cmp_r0_0')
+        )
 
-            return joinPatterns(
-                pattern1,
-                pattern2,
-                pattern3,
-                pattern4,
-                pattern5
-            )
+        return joinPatterns(
+            pattern1,
+            pattern2,
+            pattern3,
+            pattern4,
+            pattern5
+        )
 
     def form_signatureCheck(self):
-        if self.version == '5.0' or self.version == '5.0.1' or self.version == '5.1':
-            pattern = (
-                self.getHex('movw_r1_neg1'),
-                self.getHex('subw_r4_r7_x18'),
-                self.getHex('mov_r0_r1'),
-                self.getHex('mov_sp_r4'),
-                self.getHex('popw_r8_r10_r11'),
-                b'\xf0'
-            )
+        pattern = (
+            self.getHex('movw_r1_neg1'),
+            self.getHex('subw_r4_r7_x18'),
+            self.getHex('mov_r0_r1'),
+            self.getHex('mov_sp_r4'),
+            self.getHex('popw_r8_r10_r11')
+        )
 
-        else:
-            pattern = (
-                self.getHex('movw_r1_neg1'),
-                self.getHex('subw_r4_r7_x18'),
-                self.getHex('mov_r0_r1'),
-                self.getHex('mov_sp_r4'),
-                self.getHex('popw_r8_r10_r11')
-            )
-
-            return joinPatterns(pattern)
+        return joinPatterns(pattern)
 
     def form_vm_map_enter(self):
         if self.version == '5.1.1':

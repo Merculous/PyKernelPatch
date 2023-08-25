@@ -263,11 +263,11 @@ class Find:
             self.find_CSEnforcement(),
             self.find_AMFIMemcmp(),
             self.find_SignatureCheck(),
-            self.find_Vm_map_enter(),
-            self.find_Tfp0(),
-            self.find_AMFIHook(),
+            # self.find_Vm_map_enter(),
+            # self.find_Tfp0(),
+            # self.find_AMFIHook(),
             self.find_AppleImage3NORAccess(),
-            self.find_PE_i_can_has_debugger()
+            # self.find_PE_i_can_has_debugger()
         )
 
         info = {}
