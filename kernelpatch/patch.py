@@ -66,7 +66,7 @@ class Patch(Find):
         new_pattern = pattern.replace(b'\x08\x46', b'\x00\x20')
         self.patchOffset(pattern, new_pattern, offset)
 
-    def patchKernel(self, patched):
+    def patchKernel(self):
         for offset in self.offsets:
             offset, name, pattern = offset
 

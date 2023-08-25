@@ -32,7 +32,7 @@ def main():
     elif args.patch:
         if args.orig and args.patched:
             data = readBinaryFile(args.orig[0])
-            patched_data = Patch(data).patchKernel(args.patched[0])
+            patched_data = Patch(data).patchKernel()
             writeBinaryFile(patched_data, args.patched[0])
 
     else:
