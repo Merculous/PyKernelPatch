@@ -7,12 +7,12 @@ def convertHexToBytes(data):
 
 
 def formatBytes(data):
-    return binascii.hexlify(data).decode('utf-8')
+    return binascii.hexlify(data).decode()
 
 
 def joinPatterns(*data):
     return tuple([b''.join(p) for p in data])
 
 
-def hexString_to_hexInt(data):
-    return int(data[2:], 16)
+def hexOffsetToHexInt(data):
+    return int(data, 16)

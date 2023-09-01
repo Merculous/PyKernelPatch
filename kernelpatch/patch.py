@@ -1,17 +1,16 @@
 
 from .find import Find
-from .utils import hexString_to_hexInt
+from .utils import hexOffsetToHexInt
 
 
 class Patch(Find):
     def __init__(self, data):
         super().__init__(data)
 
-        self.offsets = self.findOffsets()
         self.patched_data = bytearray(self.data[:])
 
     def patchOffset(self, old, new, offset):
-        i = hexString_to_hexInt(offset)
+        i = hexOffsetToHexInt(offset)
 
         pattern_len = len(old)
 
@@ -67,7 +66,7 @@ class Patch(Find):
         self.patchOffset(pattern, new_pattern, offset)
 
     def patchKernel(self):
-        for offset in self.offsets:
+        for offset in self.findOffsets():
             offset, name, pattern = offset
 
             if name == 'cs_enforcement':

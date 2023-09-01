@@ -118,6 +118,13 @@ class Pattern:
         }
     }
 
+    # TODO
+    # Get rid of useless version requirement.
+    # Instead, if a pattern is not found, we will just
+    # add more known instructions, and look for a match.
+    # Eventually, if we run out of known bytes that could
+    # make a match, if there's none, just exit.
+
     def __init__(self, version):
         self.version = version
 

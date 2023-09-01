@@ -1,6 +1,6 @@
 
 from .patterns import Pattern
-from .utils import convertHexToBytes, formatBytes, hexString_to_hexInt
+from .utils import convertHexToBytes, formatBytes, hexOffsetToHexInt
 
 
 class Find:
@@ -36,7 +36,8 @@ class Find:
 
             else:
                 if pattern in window:
-                    found = hex(i-4)
+                    pattern_i = window.index(pattern)
+                    found = hex(i-pattern_i)
                 else:
                     window = b''
 
@@ -54,9 +55,6 @@ class Find:
                 info.update(match)
 
         return info
-
-    # TODO
-    # Make this less ugly
 
     def find_KernelVersion(self):
         search = b'Darwin Kernel Version'
@@ -87,8 +85,8 @@ class Find:
             b'Sun'
         )
 
-        version_string = None
-        version_string_offset = None
+        found_string = None
+        found_string_offset = None
 
         for version in possible:
             version_string1 = search + b' ' + version
@@ -96,8 +94,8 @@ class Find:
             match1 = self.findPattern(version_string1)
 
             if match1:
-                version_string = version_string1
-                version_string_offset = match1
+                found_string = version_string1
+                found_string_offset = match1
                 break
 
             for day in days:
@@ -110,69 +108,39 @@ class Find:
                 match3 = self.findPattern(version_string3)
 
                 if match2:
-                    version_string = version_string2
-                    version_string_offset = match2
+                    found_string = version_string2
+                    found_string_offset = match2
                     break
 
                 elif match3:
-                    version_string = version_string3
-                    version_string_offset = match3
+                    found_string = version_string3
+                    found_string_offset = match3
                     break
 
-        if not version_string:
+        if not found_string:
             raise Exception('Could not find kernel version string!')
 
-        # Need to check that the buffer doesn't contain garbage data
+        string_offset_int = hexOffsetToHexInt(found_string_offset)
 
-        extra = len(version_string) + 75
+        extra = len(found_string) + 88
 
-        i = hexString_to_hexInt(version_string_offset)
+        search_buffer = self.data[string_offset_int-4:string_offset_int+extra]
 
-        buffer_end = i + extra
+        actual_string_i = search_buffer.index(found_string)
 
-        buffer = self.data[i:buffer_end]
+        x_string_i = search_buffer.index(b'X')
 
-        buffer_hex = formatBytes(buffer)
+        buffer_cleaned = search_buffer[actual_string_i:x_string_i+1]
 
-        version_string_hex = formatBytes(version_string)
-        version_string_index = buffer_hex.index(version_string_hex)
+        search_buffer_offset = hex(self.data.index(buffer_cleaned))
 
-        new_buffer_hex = buffer_hex[version_string_index:]
-
-        if not new_buffer_hex.startswith(version_string_hex):
-            raise Exception('Buffer does not start with kernel version string!')
-
-        new_i_hex = hex(buffer_end + 8)
-        new_i = hexString_to_hexInt(new_i_hex)
-
-        start = i + version_string_index // 2
-        start_hex = hex(start)
-
-        new_buffer = self.data[start:new_i]
-        new_buffer_hex = formatBytes(new_buffer)
-
-        new_buffer_X_index = new_buffer_hex.index('58')
-
-        new_buffer_hex = new_buffer_hex[:new_buffer_X_index+2]
-        new_buffer_hex_end = new_buffer_hex[new_buffer_X_index:]
-
-        new_buffer = convertHexToBytes(new_buffer_hex)
-        new_buffer_len = len(new_buffer)
-
-        if new_buffer_hex_end != '58':
-            raise Exception(f'Failed extracting kernel version. Got buffer: {buffer}')
-
-        kernel_version = new_buffer.split(b';')[1].split(b'-')[1].split(b'/')[0].decode('utf-8')
+        kernel_version = buffer_cleaned.split(b';')[1].split(b'-')[1].split(b'/')[0]
 
         results = (
-            hex(new_buffer_len),
-            start_hex,
-            hex(start + new_buffer_len),
-            new_buffer,
-            kernel_version
+            search_buffer_offset,
+            kernel_version.decode(),
+            buffer_cleaned.decode()
         )
-
-        print(f'Found kernel version string: {results[3].decode("utf-8")}')
 
         return results
 
@@ -236,7 +204,7 @@ class Find:
             for offset in info[name]:
                 offsets.append(offset)
 
-        offsets = sorted([hexString_to_hexInt(o) for o in offsets])
+        offsets = sorted([hexOffsetToHexInt(o) for o in offsets])
 
         offsets = [hex(o) for o in offsets]
 
@@ -250,11 +218,13 @@ class Find:
         return new_info
 
     def findOffsets(self):
-        version_string = self.find_KernelVersion()
+        kernel_version = self.find_KernelVersion()
+
+        print(f'Found kernel version string at offset: {kernel_version[0]}')
 
         for major in self.kernel_versions:
             for version in self.kernel_versions[major]:
-                if version_string[-1] == self.kernel_versions[major][version]:
+                if kernel_version == self.kernel_versions[major][version]:
                     break
 
         self.initPatternObj(version)
@@ -263,11 +233,7 @@ class Find:
             self.find_CSEnforcement(),
             self.find_AMFIMemcmp(),
             self.find_SignatureCheck(),
-            # self.find_Vm_map_enter(),
-            # self.find_Tfp0(),
-            # self.find_AMFIHook(),
-            self.find_AppleImage3NORAccess(),
-            # self.find_PE_i_can_has_debugger()
+            self.find_AppleImage3NORAccess()
         )
 
         info = {}

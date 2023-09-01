@@ -1,6 +1,6 @@
 
 from .file import readBinaryFile
-from .utils import hexString_to_hexInt
+from .utils import hexOffsetToHexInt
 
 
 def createDiff(orig, patched):
@@ -58,8 +58,8 @@ def cleanUpDiff(info):
         except StopIteration:
             break
 
-        offset_int = hexString_to_hexInt(offset)
-        next_offset_int = hexString_to_hexInt(next_offset)
+        offset_int = hexOffsetToHexInt(offset)
+        next_offset_int = hexOffsetToHexInt(next_offset)
 
         new_offset = offset
         orig_hex = offset_orig
