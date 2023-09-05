@@ -11,7 +11,7 @@ def formatBytes(data):
 
 
 def joinPatterns(*data):
-    return tuple([b''.join(p) for p in data])
+    return tuple([b''.join(p) for p in data if p])
 
 
 def hexOffsetToHexInt(data):

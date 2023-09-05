@@ -1,8 +1,7 @@
 
 from argparse import ArgumentParser
 
-from .diff import diffKernels
-from .file import readBinaryFile, writeBinaryFile, writeJSONFile
+from .file import readBinaryFile, writeBinaryFile
 from .patch import Patch
 
 
@@ -18,15 +17,13 @@ def main():
 
     if args.diff:
         if args.orig and args.patched:
-            diff = diffKernels(args.orig[0], args.patched[0])
-            writeJSONFile('diff.json', diff)
+            pass
 
     elif args.patch:
         if args.orig and args.patched:
             data = readBinaryFile(args.orig[0])
-            patched_data = Patch(data).patchKernel()
-            writeBinaryFile(args.patched[0], patched_data)
-
+            patched = Patch(data).patchKernel()
+            writeBinaryFile(args.patched[0], patched)
     else:
         parser.print_help()
 

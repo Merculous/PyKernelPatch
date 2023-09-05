@@ -26,6 +26,9 @@ class Pattern:
             'ldr_r0_pc_4': b'\x01\x48',
 
             'ldr_r0_r0': b'\x00\x68',
+
+            'ldr_r3_sp_xc': b'\x03\x9b'
+
         },
         'mov': {
             'mov_r3_1': b'\x01\x23',
@@ -52,12 +55,20 @@ class Pattern:
 
             'movs_r1_1': b'\x01\x21',
 
-            'movs_r2_x13': b'\x13\x22'
+            'movs_r2_x13': b'\x13\x22',
+
+            'mov_r0_r4': b'\x20\x46',
+
+            'mov_r2_r11': b'\x5a\x46'
+
         },
         'cmp': {
             'cmp_r0_0': b'\x00\x28',
 
-            'cmp_r0_6': b'\x06\x28'
+            'cmp_r0_6': b'\x06\x28',
+
+            'cmp_r3_0': b'\x00\x2b'
+
         },
         'str': {
             'str_r3_sp_8': b'\x02\x93',
@@ -148,7 +159,6 @@ class Pattern:
                 self.getHex('blx_r10'),
                 self.getHex('movs_r1_1')
             )
-            return joinPatterns(pattern)
 
         elif self.version == '5.0.1':
             pattern = (
@@ -157,7 +167,6 @@ class Pattern:
                 self.getHex('blx_r10'),
                 b'\x01'
             )
-            return joinPatterns(pattern)
 
         elif self.version == '5.1':
             pattern = (
@@ -169,7 +178,6 @@ class Pattern:
                 self.getHex('adds_r5_x13'),
                 b'\x00'
             )
-            return joinPatterns(pattern)
 
         elif self.version == '5.1.1':
             pattern = (
@@ -177,119 +185,122 @@ class Pattern:
                 self.getHex('movs_r2_x13'),
                 self.getHex('blx_r10')
             )
-            return joinPatterns(pattern)
 
-    def form_PE_i_can_has_debugger(self):
-        if self.version == '5.1.1':
+        return joinPatterns(pattern)
+
+    def form_AppleImage3NORAccess(self):
+        if self.version in ('5.0', '5.0.1'):
             pattern1 = (
-                self.getHex('cbz_r0_x12'),
-                self.getHex('ldr_r1_pc_x14'),
-                self.getHex('ldr_r1_r1')
+                b'\x00\x80',
+                self.getHex('strw_r8_sp_4'),
+                self.getHex('str_r3_sp_8'),
+                self.getHex('blx_r12'),
+                self.getHex('cbnz_r0_x7c')
             )
 
             pattern2 = (
-                self.getHex('str_r1_r0'),
-                self.getHex('ldr_r0_pc_4'),
-                self.getHex('ldr_r0_r0'),
-                self.getHex('bx_lr')
+                self.getHex('blx_r12'),
+                self.getHex('cmp_r0_0'),
+                self.getHex('it_ne'),
+                self.getHex('movnew_r8_1'),
+                self.getHex('mov_r0_r8'),
+                self.getHex('add_sp_sp_x14')
             )
 
-            return joinPatterns(pattern1, pattern2)
+            pattern3 = (
+                self.getHex('movs_r1_2'),
+                self.getHex('ldr_r4_pc_x214'),
+                self.getHex('blx_r4'),
+                self.getHex('cmp_r0_0')
+            )
 
-    def form_AppleImage3NORAccess(self):
-        pattern1 = (
-            self.getHex('str_r3_sp_8'),
-            self.getHex('blx_r12'),
-            self.getHex('cbnz_r0_x7c')
-        )
+            pattern4 = (
+                self.getHex('bne_to_movw_r6_x2e2'),
+                self.getHex('ldr_r0_sp_x14'),
+                self.getHex('ldr_r4_pc_x20c'),
+                self.getHex('blx_r4'),
+                self.getHex('cmp_r0_0'),
+                self.getHex('bne_to_movw_r6_x2e2_second')
+            )
 
-        pattern2 = (
-            self.getHex('strw_r8_sp_4'),
-            self.getHex('strw_r8_sp_8'),
-            self.getHex('blx_r12'),
-            self.getHex('cmp_r0_0')
-        )
+            pattern5 = (
+                self.getHex('ldr_r6_pc_xac'),
+                self.getHex('mov_r0_r5'),
+                self.getHex('ldr_r1_sp_8'),
+                self.getHex('blx_r6')
+            )
 
-        pattern3 = (
-            self.getHex('ldr_r4_pc_x214'),
-            self.getHex('blx_r4'),
-            self.getHex('cmp_r0_0'),
-            self.getHex('bne_to_movw_r6_x2e2')
-        )
+        elif self.version == '5.1.1':
+            pattern1 = (
+                self.getHex('movs_r2_1'),
+                self.getHex('strw_r8_sp'),
+                self.getHex('strw_r8_sp_4'),
+                self.getHex('str_r3_sp_8'),
+                self.getHex('blx_r12'),
+                b'\xc0'
+            )
 
-        pattern4 = (
-            self.getHex('ldr_r4_pc_x20c'),
-            self.getHex('blx_r4'),
-            self.getHex('cmp_r0_0')
-        )
+            pattern2 = (
+                b'\x68\xc0',
+                self.getHex('mov_r0_r4'),
+                self.getHex('mov_r2_r11'),
+                self.getHex('ldr_r3_sp_xc'),
+                self.getHex('strw_r8_sp'),
+                self.getHex('strw_r8_sp_4'),
+                self.getHex('strw_r8_sp_8'),
+                self.getHex('blx_r12'),
+                self.getHex('cmp_r0_0'),
+                self.getHex('it_ne'),
+                b'\x4f\xf0'
+            )
 
-        pattern5 = (
-            self.getHex('ldr_r1_sp_8'),
-            self.getHex('blx_r6'),
-            self.getHex('cmp_r0_0')
-        )
+            pattern3 = (
+                self.getHex('movs_r1_2'),
+                self.getHex('ldr_r4_pc_x214'),
+                self.getHex('blx_r4'),
+                self.getHex('cmp_r0_0')
+            )
+
+            pattern4 = (
+                self.getHex('bne_to_movw_r6_x2e2'),
+                self.getHex('ldr_r0_sp_x14'),
+                self.getHex('ldr_r4_pc_x20c'),
+                self.getHex('blx_r4'),
+                self.getHex('cmp_r0_0')
+            )
+
+            pattern5 = (
+                self.getHex('ldr_r6_pc_xac'),
+                self.getHex('mov_r0_r5'),
+                self.getHex('ldr_r1_sp_8'),
+                self.getHex('blx_r6')
+            )
 
         return joinPatterns(
             pattern1,
             pattern2,
             pattern3,
             pattern4,
-            pattern5
+            pattern5,
         )
 
     def form_signatureCheck(self):
-        pattern = (
-            self.getHex('movw_r1_neg1'),
-            self.getHex('subw_r4_r7_x18'),
-            self.getHex('mov_r0_r1'),
-            self.getHex('mov_sp_r4'),
-            self.getHex('popw_r8_r10_r11')
-        )
+        if self.version in ('5.0', '5.0.1', '5.1'):
+            pattern = (
+                self.getHex('movw_r1_neg1'),
+                self.getHex('subw_r4_r7_x18'),
+                self.getHex('mov_r0_r1'),
+                self.getHex('mov_sp_r4'),
+                self.getHex('popw_r8_r10_r11'),
+                b'\xf0'
+            )
+
+        elif self.version == '5.1.1':
+            pattern = (
+                self.getHex('subw_r4_r7_x18'),
+                self.getHex('mov_r0_r1'),
+                self.getHex('mov_sp_r4'),
+                b'\xbd\xe8'
+            )
 
         return joinPatterns(pattern)
-
-    def form_vm_map_enter(self):
-        if self.version == '5.1.1':
-            pattern = (
-                self.getHex('andw_r0_r1_6'),
-                self.getHex('cmp_r0_6')
-            )
-
-            return joinPatterns(pattern)
-
-    def form_flush_dcache(self):
-        pass
-
-    def form_flush_icache(self):
-        pass
-
-    def form_tfp0(self):
-        if self.version == '5.1.1':
-            pattern = (
-                self.getHex('str_r1_sp_4'),
-                self.getHex('bne_x16')
-            )
-
-            return joinPatterns(pattern)
-
-    def form_syscall0(self):
-        pass
-
-    def form_syscall0_value(self):
-        pass
-
-    def form_nx_enable(self):
-        pass
-
-    def form_io_log(self):
-        pass
-
-    def form_AMFIHook(self):
-        if self.version == '5.1.1':
-            pattern = (
-                self.getHex('mov_r0_r5'),
-                self.getHex('blx_r2'),
-                self.getHex('b_x23a')
-            )
-
-            return joinPatterns(pattern)

@@ -1,6 +1,6 @@
 
 from .patterns import Pattern
-from .utils import convertHexToBytes, formatBytes, hexOffsetToHexInt
+from .utils import formatBytes, hexOffsetToHexInt
 
 
 class Find:
@@ -16,45 +16,23 @@ class Find:
     def __init__(self, data):
         self.data = data
 
-    def findPattern(self, pattern):
+    def findPattern(self, pattern, print_hex=False):
         data_len = len(self.data)
         pattern_len = len(pattern)
 
-        found = None
+        if not print_hex:
+            print(f'Looking for pattern: {pattern}')
+        else:
+            print(f'Looking for pattern: {formatBytes(pattern)}')
 
         for i in range(0, data_len, pattern_len):
-            look_back_buffer = self.data[i-4:i]
-
             buffer = self.data[i:i+pattern_len]
 
-            look_ahead_buffer = self.data[i+pattern_len:i+pattern_len+4]
-
-            window = look_back_buffer + buffer + look_ahead_buffer
+            i_hex = hex(i)
 
             if pattern == buffer:
-                found = hex(i)
-
-            else:
-                if pattern in window:
-                    pattern_i = window.index(pattern)
-                    found = hex(i-pattern_i)
-                else:
-                    window = b''
-
-        return found
-
-    def findPatchOffset(self, patterns):
-        info = {}
-
-        for pattern in patterns:
-            offset = self.findPattern(pattern)
-
-            if offset:
-                match = {offset: pattern}
-
-                info.update(match)
-
-        return info
+                print(f'Found pattern at offset: {i_hex}')
+                return i_hex
 
     def find_KernelVersion(self):
         search = b'Darwin Kernel Version'
@@ -89,33 +67,36 @@ class Find:
         found_string_offset = None
 
         for version in possible:
-            version_string1 = search + b' ' + version
+            while not found_string:
+                version_string1 = search + b' ' + version
 
-            match1 = self.findPattern(version_string1)
+                match1 = self.findPattern(version_string1)
 
-            if match1:
-                found_string = version_string1
-                found_string_offset = match1
+                if match1:
+                    found_string = version_string1
+                    found_string_offset = match1
+                    break
+
+                for day in days:
+                    version_string2 = search + b' ' + version + b': ' + day[:1]
+
+                    match2 = self.findPattern(version_string2)
+
+                    if match2:
+                        found_string = version_string2
+                        found_string_offset = match2
+                        break
+
+                    version_string3 = search + b' ' + version + b': ' + day[:2]
+
+                    match3 = self.findPattern(version_string3)
+
+                    if match3:
+                        found_string = version_string3
+                        found_string_offset = match3
+                        break
+
                 break
-
-            for day in days:
-                version_string2 = search + b' ' + version + b': ' + day[:1]
-
-                match2 = self.findPattern(version_string2)
-
-                version_string3 = search + b' ' + version + b': ' + day[:2]
-
-                match3 = self.findPattern(version_string3)
-
-                if match2:
-                    found_string = version_string2
-                    found_string_offset = match2
-                    break
-
-                elif match3:
-                    found_string = version_string3
-                    found_string_offset = match3
-                    break
 
         if not found_string:
             raise Exception('Could not find kernel version string!')
@@ -144,110 +125,124 @@ class Find:
 
         return results
 
-    def initPatternObj(self, version):
-        self.Pattern = Pattern(version)
+    def versionStringToVersion(self, results):
+        versions = self.kernel_versions
 
-    def find_CSEnforcement(self):
-        search = self.Pattern.form_CSEnforcement()
-        offsets = self.findPatchOffset(search)
-        info = {'cs_enforcement': offsets}
-        return info
+        for base in versions:
+            for version in versions[base]:
+                if versions[base][version] == results[1]:
+                    return version
 
-    def find_AMFIMemcmp(self):
-        search = self.Pattern.form_AMFIMemcmp()
-        offsets = self.findPatchOffset(search)
-        info = {'amfi_memcmp': offsets}
-        return info
-
-    def find_Vm_map_enter(self):
-        search = self.Pattern.form_vm_map_enter()
-        offsets = self.findPatchOffset(search)
-        info = {'vm_map_enter': offsets}
-        return info
-
-    def find_Tfp0(self):
-        search = self.Pattern.form_tfp0()
-        offsets = self.findPatchOffset(search)
-        info = {'tfp0': offsets}
-        return info
-
-    def find_PE_i_can_has_debugger(self):
-        search = self.Pattern.form_PE_i_can_has_debugger()
-        offsets = self.findPatchOffset(search)
-        info = {'pe_i_can_has_debugger': offsets}
-        return info
-
-    def find_AMFIHook(self):
-        search = self.Pattern.form_AMFIHook()
-        offsets = self.findPatchOffset(search)
-        info = {'amfi_hook': offsets}
-        return info
-
-    def find_SignatureCheck(self):
-        search = self.Pattern.form_signatureCheck()
-        offsets = self.findPatchOffset(search)
-        info = {'sig_check': offsets}
-        return info
-
-    def find_AppleImage3NORAccess(self):
-        search = self.Pattern.form_AppleImage3NORAccess()
-        offsets = self.findPatchOffset(search)
-        info = {'apple_image3_nor_access': offsets}
-        return info
-
-    def cleanupOffsets(self, info):
-        new_info = []
-
+    def findOffsets(self, patterns, print_hex=False):
         offsets = []
 
-        for name in info:
-            for offset in info[name]:
-                offsets.append(offset)
+        for pattern in patterns:
+            offset = self.findPattern(pattern, print_hex)
 
-        offsets = sorted([hexOffsetToHexInt(o) for o in offsets])
+            if offset:
+                offsets.append((offset, pattern))
 
-        offsets = [hex(o) for o in offsets]
+        if offsets:
+            return tuple(offsets)
+        else:
+            return None
 
-        for offset_sorted in offsets:
-            for name in info:
-                for offset in info[name]:
-                    if offset == offset_sorted:
-                        new = (offset_sorted, name, info[name][offset_sorted])
-                        new_info.append(new)
+    def crunchPatternUntilTrue(self, pattern, control):
+        pattern_len = len(pattern)
 
-        return new_info
+        matches = []
 
-    def findOffsets(self):
-        kernel_version = self.find_KernelVersion()
+        # Look for the pattern
 
-        print(f'Found kernel version string at offset: {kernel_version[0]}')
+        result = self.findPattern(pattern)
 
-        for major in self.kernel_versions:
-            for version in self.kernel_versions[major]:
-                if kernel_version == self.kernel_versions[major][version]:
+        # Search left -> Right
+        # Remove 1 byte from the front
+
+        if not result:
+            for i in range(1, pattern_len):
+                buffer = pattern[i:]
+
+                result = self.findPattern(buffer, True)
+
+                if result:
+                    matches.append((result, formatBytes(buffer)))
+                    result = None
+
+                if buffer[:2] == control:
+                    # We need the control in the buffer
+                    # We shortened as much as possible
+
+                    print('Hit control! Breaking...')
                     break
 
-        self.initPatternObj(version)
+        if not result:
+            for i in range(1, pattern_len):
+                buffer = pattern[:-i]
 
-        offsets = (
-            self.find_CSEnforcement(),
-            self.find_AMFIMemcmp(),
-            self.find_SignatureCheck(),
-            self.find_AppleImage3NORAccess()
-        )
+                result = self.findPattern(buffer, True)
 
-        info = {}
+                if result:
+                    matches.append((result, formatBytes(buffer)))
+                    result = None
 
-        for part in offsets:
-            if part:
-                info.update(part)
+                if buffer[-2:] == control:
+                    # We need the control in the buffer
+                    # We shortened as much as possible
 
-        if not info:
-            raise Exception('No offsets were found!')
+                    print('Hit control! Breaking...')
+                    break
 
-        info_sorted = self.cleanupOffsets(info)
+        if not result:
+            for i in range(1, pattern_len):
+                buffer = pattern[i:-i]
 
-        for match in info_sorted:
-            print(f'Found {match[1]} at offset {match[0]}')
+                result = self.findPattern(buffer, True)
 
-        return info_sorted
+                if result:
+                    matches.append((result, formatBytes(buffer)))
+                    result = None
+
+                if buffer[:2] == control or buffer[-2:] == control:
+                    # We need the control in the buffer
+                    # We shortened as much as possible
+
+                    print('Hit control! Breaking...')
+                    break
+
+        if matches:
+            return tuple(matches)
+        else:
+            return None
+
+    def find_CSEnforcement(self):
+        patterns = self.pattern_obj.form_CSEnforcement()
+        return self.findOffsets(patterns)
+
+    def find_AMFIMemcmp(self):
+        patterns = self.pattern_obj.form_AMFIMemcmp()
+        return self.findOffsets(patterns)
+
+    def find_AppleImage3NORAccess(self):
+        patterns = self.pattern_obj.form_AppleImage3NORAccess()
+        return self.findOffsets(patterns)
+
+    def find_signatureCheck(self):
+        patterns = self.pattern_obj.form_signatureCheck()
+        return self.findOffsets(patterns)
+
+    def findAllOffsets(self):
+        version_string = self.find_KernelVersion()
+
+        version = self.versionStringToVersion(version_string)
+
+        self.pattern_obj = Pattern(version)
+
+        info = {
+            'cs_enforcement': self.find_CSEnforcement(),
+            'amfi_memcmp': self.find_AMFIMemcmp(),
+            'apple_image3_nor_access': self.find_AppleImage3NORAccess(),
+            'sig_check': self.find_signatureCheck()
+        }
+
+        return info
