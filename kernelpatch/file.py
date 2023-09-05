@@ -20,3 +20,8 @@ def readJSONFile(path):
 def writeJSONFile(path, data, indent=2):
     with open(path, 'w') as f:
         json.dump(data, f, indent=indent)
+
+
+def readTextFile(path):
+    with open(path) as f:
+        return f.readlines()

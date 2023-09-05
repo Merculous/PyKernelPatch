@@ -1,6 +1,6 @@
 
 from .patterns import Pattern
-from .utils import formatBytes, hexOffsetToHexInt
+from .utils import formatBytes, hexStringToHexInt
 
 
 class Find:
@@ -101,7 +101,7 @@ class Find:
         if not found_string:
             raise Exception('Could not find kernel version string!')
 
-        string_offset_int = hexOffsetToHexInt(found_string_offset)
+        string_offset_int = hexStringToHexInt(found_string_offset)
 
         extra = len(found_string) + 88
 

@@ -1,6 +1,6 @@
 
 from .find import Find
-from .utils import formatBytes, hexOffsetToHexInt
+from .utils import formatBytes, hexStringToHexInt
 
 
 class Patch(Find):
@@ -10,7 +10,7 @@ class Patch(Find):
         self.patched_data = bytearray(self.data[:])
 
     def patchData(self, offset, pattern, old, new):
-        i = hexOffsetToHexInt(offset)
+        i = hexStringToHexInt(offset)
 
         pattern_len = len(pattern)
 
@@ -19,7 +19,7 @@ class Patch(Find):
         if buffer == pattern:
             old_i = buffer.index(old)
 
-            real_offset = hex(hexOffsetToHexInt(offset) + old_i)
+            real_offset = hex(hexStringToHexInt(offset) + old_i)
 
             new_buffer = buffer.replace(old, new)
             self.patched_data[i:i+pattern_len] = new_buffer
