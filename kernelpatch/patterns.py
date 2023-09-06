@@ -166,8 +166,6 @@ class Pattern:
     def form_AMFIMemcmp(self):
         if self.version == '5.0':
             pattern = (
-                self.getHex('mov_r1_r5'),
-                self.getHex('movs_r2_x13'),
                 self.getHex('blx_r10'),
                 self.getHex('movs_r1_1')
             )
