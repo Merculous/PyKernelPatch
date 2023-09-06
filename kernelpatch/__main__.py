@@ -5,9 +5,6 @@ from .file import readBinaryFile, readTextFile, writeBinaryFile
 from .patch import Patch
 from .utils import readIDAAssembly
 
-# TODO
-# Fix 5.0 and 5.1 pattterns
-
 
 def main():
     parser = ArgumentParser()

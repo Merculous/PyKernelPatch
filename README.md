@@ -30,11 +30,6 @@ very close or exactly the same. Only real differences between devices is where
 everything gets loaded. 5.x have been tested and all of them restore without
 issues.
 
-# Additional functionality
-
-This project also provides a diff function, although it needs updating. Note,
-when diffing two kernels, they must be the same size.
-
 # Issues
 
 iOS 4 and 6 are not supported currently. I'm not aware of what needs to be fixed,
