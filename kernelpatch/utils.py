@@ -39,6 +39,6 @@ def readIDAAssembly(lines):
                     values.append(value.lower())
 
         if values:
-            new.append(''.join(values))
+            new.append(' '.join(values))
 
     return tuple(new)

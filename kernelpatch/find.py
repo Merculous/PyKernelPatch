@@ -156,6 +156,16 @@ class Find:
 
         result = self.findPattern(pattern)
 
+        if result:
+            matches.append((result, formatBytes(pattern)))
+            result = None
+
+            # We found a match.
+            # Crunch anyway just in case we manage to find
+            # a match that's smaller than the original.
+            # This is just so we can shorten the pattern,
+            # if possible.
+
         # Search left -> Right
         # Remove 1 byte from the front
 

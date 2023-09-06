@@ -27,7 +27,9 @@ class Pattern:
 
             'ldr_r0_r0': b'\x00\x68',
 
-            'ldr_r3_sp_xc': b'\x03\x9b'
+            'ldr_r3_sp_xc': b'\x03\x9b',
+
+            'ldrb_r4_r0_x11': b'\x44\x7c'
 
         },
         'mov': {
@@ -59,7 +61,13 @@ class Pattern:
 
             'mov_r0_r4': b'\x20\x46',
 
-            'mov_r2_r11': b'\x5a\x46'
+            'mov_r2_r11': b'\x5a\x46',
+
+            'movw_r1_x4950': b'\x44\xf6\x50\x11',  # "IP"
+
+            'movs_r3_0': b'\x00\x23',
+
+            'mov_r0_r6': b'\x30\x46'
 
         },
         'cmp': {
@@ -87,7 +95,9 @@ class Pattern:
             'andw_r0_r1_6': b'\x01\xf0\x06\x00'
         },
         'pop': {
-            'popw_r8_r10_r11': b'\xbd\xe8\x00\x0d'
+            'popw_r8_r10_r11': b'\xbd\xe8\x00\x0d',
+
+            'pop_r4_r5_r6_r7_pc': b'\xf0\xbd'
         },
         'add': {
             'add_sp_sp_x14': b'\x05\xb0',
@@ -145,10 +155,12 @@ class Pattern:
                 return self.instructions[base][instruction]
 
     def form_CSEnforcement(self):
-        pattern = (
-            self.getHex('ldr_r2_r4_x28'),
-            self.getHex('ldr_r3_r3')
-        )
+        if self.version in ('5.0', '5.0.1', '5.1', '5.1.1'):
+            pattern = (
+                self.getHex('ldr_r2_r4_x28'),
+                self.getHex('ldr_r3_r3')
+            )
+
         return joinPatterns(pattern)
 
     def form_AMFIMemcmp(self):
@@ -230,29 +242,53 @@ class Pattern:
                 self.getHex('blx_r6')
             )
 
-        elif self.version == '5.1.1':
-            pattern1 = (
-                self.getHex('movs_r2_1'),
-                self.getHex('strw_r8_sp'),
-                self.getHex('strw_r8_sp_4'),
-                self.getHex('str_r3_sp_8'),
-                self.getHex('blx_r12'),
-                b'\xc0'
-            )
+        elif self.version in ('5.1', '5.1.1'):
+            if self.version == '5.1':
+                pattern1 = (
+                    b'\x80',
+                    self.getHex('str_r3_sp_8'),
+                    self.getHex('blx_r12'),
+                    self.getHex('cbnz_r0_x7c'),
+                    self.getHex('movw_r1_x4950'),
+                    self.getHex('movnew_r8_1'),
+                    self.getHex('movs_r3_0')
+                )
 
-            pattern2 = (
-                b'\x68\xc0',
-                self.getHex('mov_r0_r4'),
-                self.getHex('mov_r2_r11'),
-                self.getHex('ldr_r3_sp_xc'),
-                self.getHex('strw_r8_sp'),
-                self.getHex('strw_r8_sp_4'),
-                self.getHex('strw_r8_sp_8'),
-                self.getHex('blx_r12'),
-                self.getHex('cmp_r0_0'),
-                self.getHex('it_ne'),
-                b'\x4f\xf0'
-            )
+            else:
+                pattern1 = (
+                    self.getHex('movs_r2_1'),
+                    self.getHex('strw_r8_sp'),
+                    self.getHex('strw_r8_sp_4'),
+                    self.getHex('str_r3_sp_8'),
+                    self.getHex('blx_r12'),
+                    b'\xc0'
+                )
+
+            if self.version == '5.1':
+                pattern2 = (
+                    b'\x80',
+                    self.getHex('strw_r8_sp_4'),
+                    self.getHex('strw_r8_sp_8'),
+                    self.getHex('blx_r12'),
+                    self.getHex('cmp_r0_0'),
+                    self.getHex('it_ne'),
+                    b'\x4f\xf0'
+                )
+
+            else:
+                pattern2 = (
+                    b'\x68\xc0',
+                    self.getHex('mov_r0_r4'),
+                    self.getHex('mov_r2_r11'),
+                    self.getHex('ldr_r3_sp_xc'),
+                    self.getHex('strw_r8_sp'),
+                    self.getHex('strw_r8_sp_4'),
+                    self.getHex('strw_r8_sp_8'),
+                    self.getHex('blx_r12'),
+                    self.getHex('cmp_r0_0'),
+                    self.getHex('it_ne'),
+                    b'\x4f\xf0'
+                )
 
             pattern3 = (
                 self.getHex('movs_r1_2'),
@@ -261,13 +297,22 @@ class Pattern:
                 self.getHex('cmp_r0_0')
             )
 
-            pattern4 = (
-                self.getHex('bne_to_movw_r6_x2e2'),
-                self.getHex('ldr_r0_sp_x14'),
-                self.getHex('ldr_r4_pc_x20c'),
-                self.getHex('blx_r4'),
-                self.getHex('cmp_r0_0')
-            )
+            if self.version == '5.1':
+                pattern4 = (
+                    self.getHex('cmp_r0_0'),
+                    self.getHex('bne_to_movw_r6_x2e2_second'),
+                    self.getHex('mov_r0_r6'),
+                    self.getHex('ldrb_r4_r0_x11')
+                )
+
+            else:
+                pattern4 = (
+                    self.getHex('bne_to_movw_r6_x2e2'),
+                    self.getHex('ldr_r0_sp_x14'),
+                    self.getHex('ldr_r4_pc_x20c'),
+                    self.getHex('blx_r4'),
+                    self.getHex('cmp_r0_0')
+                )
 
             pattern5 = (
                 self.getHex('ldr_r6_pc_xac'),
@@ -285,7 +330,7 @@ class Pattern:
         )
 
     def form_signatureCheck(self):
-        if self.version in ('5.0', '5.0.1', '5.1'):
+        if self.version in ('5.0', '5.0.1'):
             pattern = (
                 self.getHex('movw_r1_neg1'),
                 self.getHex('subw_r4_r7_x18'),
@@ -293,6 +338,16 @@ class Pattern:
                 self.getHex('mov_sp_r4'),
                 self.getHex('popw_r8_r10_r11'),
                 b'\xf0'
+            )
+
+        elif self.version == '5.1':
+            pattern = (
+                b'\xff\x31',
+                self.getHex('subw_r4_r7_x18'),
+                self.getHex('mov_r0_r1'),
+                self.getHex('mov_sp_r4'),
+                self.getHex('popw_r8_r10_r11'),
+                self.getHex('pop_r4_r5_r6_r7_pc')
             )
 
         elif self.version == '5.1.1':
