@@ -10,6 +10,9 @@ class Find:
             '5.0.1': '1878.4.46~1',
             '5.1': '1878.11.8~1',
             '5.1.1': '1878.11.10~1'
+        },
+        '6.x': {
+            '6.1.3': '2107.7.55.2.2~1'
         }
     }
 
@@ -35,103 +38,21 @@ class Find:
                 return i_hex
 
     def find_KernelVersion(self):
-        search = b'Darwin Kernel Version'
+        xnu_string = b'root:xnu'
+        xnu_string_len = len(xnu_string)
 
-        possible = (
-            b'10.3.1',
-            b'10.4.0',
-            b'11.0.0',
-            b'13.0.0',
-            b'14.0.0',
-            b'15.0.0',
-            b'15.6.0',
-            b'16.0.0',
-            b'16.1.0',
-            b'16.3.0',
-            b'16.5.0',
-            b'16.6.0',
-            b'16.7.0'
-        )
+        match = self.findPattern(xnu_string)
 
-        days = (
-            b'Mon',
-            b'Tue',
-            b'Wed',
-            b'Thu',
-            b'Fri',
-            b'Sat',
-            b'Sun'
-        )
-
-        found_string = None
-        found_string_offset = None
-
-        for version in possible:
-            while not found_string:
-                version_string1 = search + b' ' + version
-
-                match1 = self.findPattern(version_string1)
-
-                if match1:
-                    found_string = version_string1
-                    found_string_offset = match1
-                    break
-
-                for day in days:
-                    version_string2 = search + b' ' + version + b': ' + day[:1]
-
-                    match2 = self.findPattern(version_string2)
-
-                    if match2:
-                        found_string = version_string2
-                        found_string_offset = match2
-                        break
-
-                    version_string3 = search + b' ' + version + b': ' + day[:2]
-
-                    match3 = self.findPattern(version_string3)
-
-                    if match3:
-                        found_string = version_string3
-                        found_string_offset = match3
-                        break
-
-                break
-
-        if not found_string:
+        if not match:
             raise Exception('Could not find kernel version string!')
 
-        string_offset_int = hexStringToHexInt(found_string_offset)
+        offset = hexStringToHexInt(match)
 
-        extra = len(found_string) + 88
+        buffer = self.data[offset:offset+xnu_string_len+20]
 
-        search_buffer = self.data[string_offset_int-4:string_offset_int+extra]
+        version = buffer.decode().split('/')[0].split(f'{xnu_string.decode()}-')[1]
 
-        actual_string_i = search_buffer.index(found_string)
-
-        x_string_i = search_buffer.index(b'X')
-
-        buffer_cleaned = search_buffer[actual_string_i:x_string_i+1]
-
-        search_buffer_offset = hex(self.data.index(buffer_cleaned))
-
-        kernel_version = buffer_cleaned.split(b';')[1].split(b'-')[1].split(b'/')[0]
-
-        results = (
-            search_buffer_offset,
-            kernel_version.decode(),
-            buffer_cleaned.decode()
-        )
-
-        return results
-
-    def versionStringToVersion(self, results):
-        versions = self.kernel_versions
-
-        for base in versions:
-            for version in versions[base]:
-                if versions[base][version] == results[1]:
-                    return version
+        return version
 
     def findOffsets(self, patterns, print_hex=False):
         offsets = []
@@ -173,17 +94,15 @@ class Find:
             for i in range(1, pattern_len):
                 buffer = pattern[i:]
 
-                result = self.findPattern(buffer, True)
+                while control in buffer:
+                    result = self.findPattern(buffer, True)
 
-                if result:
-                    matches.append((result, formatBytes(buffer)))
-                    result = None
+                    if result:
+                        matches.append((result, formatBytes(buffer)))
+                        result = None
 
-                if buffer[:2] == control:
-                    # We need the control in the buffer
-                    # We shortened as much as possible
-
-                    print('Hit control! Breaking...')
+                    break
+                else:
                     break
 
         if not result:
@@ -192,15 +111,15 @@ class Find:
 
                 result = self.findPattern(buffer, True)
 
-                if result:
-                    matches.append((result, formatBytes(buffer)))
-                    result = None
+                while control in buffer:
+                    result = self.findPattern(buffer, True)
 
-                if buffer[-2:] == control:
-                    # We need the control in the buffer
-                    # We shortened as much as possible
+                    if result:
+                        matches.append((result, formatBytes(buffer)))
+                        result = None
 
-                    print('Hit control! Breaking...')
+                    break
+                else:
                     break
 
         if not result:
@@ -209,15 +128,15 @@ class Find:
 
                 result = self.findPattern(buffer, True)
 
-                if result:
-                    matches.append((result, formatBytes(buffer)))
-                    result = None
+                while control in buffer:
+                    result = self.findPattern(buffer, True)
 
-                if buffer[:2] == control or buffer[-2:] == control:
-                    # We need the control in the buffer
-                    # We shortened as much as possible
+                    if result:
+                        matches.append((result, formatBytes(buffer)))
+                        result = None
 
-                    print('Hit control! Breaking...')
+                    break
+                else:
                     break
 
         if matches:
@@ -227,6 +146,26 @@ class Find:
 
     def find_CSEnforcement(self):
         patterns = self.pattern_obj.form_CSEnforcement()
+        return self.findOffsets(patterns)
+
+    def find_vm_map_enter(self):
+        patterns = self.pattern_obj.form_vm_map_enter()
+        return self.findOffsets(patterns)
+
+    def find_tfp0(self):
+        patterns = self.pattern_obj.form_tfp0()
+        return self.findOffsets(patterns)
+
+    def find_AMFICertification(self):
+        patterns = self.pattern_obj.form_AMFICertification()
+        return self.findOffsets(patterns)
+
+    def find_Sandbox(self):
+        patterns = self.pattern_obj.form_Sandbox()
+        return self.findOffsets(patterns)
+
+    def find_SandboxEntitlement(self):
+        patterns = self.pattern_obj.form_SandboxEntitlement()
         return self.findOffsets(patterns)
 
     def find_AMFIMemcmp(self):
@@ -244,15 +183,66 @@ class Find:
     def findAllOffsets(self):
         version_string = self.find_KernelVersion()
 
-        version = self.versionStringToVersion(version_string)
-
-        self.pattern_obj = Pattern(version)
-
-        info = {
-            'cs_enforcement': self.find_CSEnforcement(),
-            'amfi_memcmp': self.find_AMFIMemcmp(),
-            'apple_image3_nor_access': self.find_AppleImage3NORAccess(),
-            'sig_check': self.find_signatureCheck()
+        to_find = {
+            'cs_enforcement': False,
+            'vm_map_enter': False,
+            'tfp0': False,
+            'amfi_certification': False,
+            'sandbox': False,
+            'sandbox_entitlement': False,
+            'amfi_memcmp': False,
+            'apple_image3_nor_access': False,
+            'signature_check': False
         }
 
-        return info
+        xnu_version = None
+
+        for base in self.kernel_versions:
+            versions = self.kernel_versions[base]
+
+            for version in versions:
+                if versions[version] == version_string:
+                    xnu_version = version
+
+                    if base == '5.x':
+                        pass
+
+                    elif base == '6.x':
+                        to_find['cs_enforcement'] = True
+                        to_find['vm_map_enter'] = True
+                        to_find['tfp0'] = True
+                        to_find['amfi_certification'] = True
+                        to_find['sandbox'] = True
+                        to_find['sandbox_entitlement'] = True
+                        to_find['apple_image3_nor_access'] = True
+
+        self.pattern_obj = Pattern(xnu_version)
+
+        if to_find['cs_enforcement']:
+            to_find['cs_enforcement'] = self.find_CSEnforcement()
+
+        if to_find['vm_map_enter']:
+            to_find['vm_map_enter'] = self.find_vm_map_enter()
+
+        if to_find['tfp0']:
+            to_find['tfp0'] = self.find_tfp0()
+
+        if to_find['amfi_certification']:
+            to_find['amfi_certification'] = self.find_AMFICertification()
+
+        if to_find['sandbox']:
+            to_find['sandbox'] = self.find_Sandbox()
+
+        if to_find['sandbox_entitlement']:
+            to_find['sandbox_entitlement'] = self.find_SandboxEntitlement()
+
+        if to_find['amfi_memcmp']:
+            to_find['amfi_memcmp'] = self.find_AMFIMemcmp()
+
+        if to_find['apple_image3_nor_access']:
+            to_find['apple_image3_nor_access'] = self.find_AppleImage3NORAccess()
+
+        if to_find['signature_check']:
+            to_find['signature_check'] = self.find_signatureCheck()
+
+        return to_find

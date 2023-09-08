@@ -29,7 +29,17 @@ class Pattern:
 
             'ldr_r3_sp_xc': b'\x03\x9b',
 
-            'ldrb_r4_r0_x11': b'\x44\x7c'
+            'ldrb_r4_r0_x11': b'\x44\x7c',
+
+            'ldr_r2_r2': b'\x12\x68',
+
+            'ldr_r2_sp_x338': b'\xce\x9a',
+
+            'ldr_r4_pc_x40': b'\x10\x4c',
+
+            'ldr_r1_r4_8': b'\xa1\x68',
+
+            'ldr_r0_sp_x10': b'\x04\x98'
 
         },
         'mov': {
@@ -67,7 +77,15 @@ class Pattern:
 
             'movs_r3_0': b'\x00\x23',
 
-            'mov_r0_r6': b'\x30\x46'
+            'mov_r0_r6': b'\x30\x46',
+
+            'mov_r4_r0': b'\x04\x46',
+
+            'movw_r4_x2e2': b'\x40\xf2\xe2\x24',
+
+            'movt_r4_xe000': b'\xce\xf2\x00\x04',
+
+            'mov_r1_r6': b'\x31\x46'
 
         },
         'cmp': {
@@ -75,7 +93,11 @@ class Pattern:
 
             'cmp_r0_6': b'\x06\x28',
 
-            'cmp_r3_0': b'\x00\x2b'
+            'cmp_r3_0': b'\x00\x2b',
+
+            'cmp_r2_0': b'\x00\x2a',
+
+            'cmp_r1_r2': b'\x91\x42'
 
         },
         'str': {
@@ -89,7 +111,10 @@ class Pattern:
 
             'strw_r8_sp': b'\xcd\xf8\x00\x80',
 
-            'strw_r8_sp_4': b'\xcd\xf8\x04\x80'
+            'strw_r8_sp_4': b'\xcd\xf8\x04\x80',
+
+            'str_r1_sp_x64': b'\x19\x91'
+
         },
         'and': {
             'andw_r0_r1_6': b'\x01\xf0\x06\x00'
@@ -102,10 +127,23 @@ class Pattern:
         'add': {
             'add_sp_sp_x14': b'\x05\xb0',
 
-            'adds_r5_x13': b'\x13\x35'
+            'adds_r5_x13': b'\x13\x35',
+
+            'addeqw_sp_sp_x33c': b'\x0d\xf5\x4f\x7d',
+
+            'add_r4_pc': b'\x7c\x44',
+
+            'addw_r0_r4_x20': b'\x04\xf1\x20\x00',
+
+            'addw_r0_r4_x6c': b'\x04\xf1\x6c\x00'
+
         },
         'it': {
-            'it_ne': b'\x18\xbf'
+            'it_ne': b'\x18\xbf',
+
+            'itt_eq': b'\x04\xbf',
+
+            'ittt_eq': b'\x02\xbf'
         },
         'sub': {
             'subw_r4_r7_x18': b'\xa7\xf1\x18\x04'
@@ -135,7 +173,27 @@ class Pattern:
 
             'blx_r10': b'\xd0\x47',
 
-            'cbz_r0_x14': b'\x40\xb1'
+            'cbz_r0_x14': b'\x40\xb1',
+
+            'beq_8': b'\x01\xd0',
+
+            'b_x2a': b'\x10\xe0',
+
+            'bl_x64da': b'\x06\xf0\x67\xfa',
+
+            'bl_x650a': b'\x06\xf0\x7b\xfa',
+
+            'cbz_r4_x34': b'\x6c\xb1',
+
+            'bnew_x220': b'\x40\xf0\x0e\x81',
+
+            'bl_x4e2': b'\x00\xf0\x6c\xfa',
+
+            'bnew_x212': b'\x40\xf0\x04\x81'
+
+        },
+        'or': {
+            'eoreq_r6_r0_1': b'\x80\xf0\x01\x06'
         }
     }
 
@@ -159,6 +217,91 @@ class Pattern:
             pattern = (
                 self.getHex('ldr_r2_r4_x28'),
                 self.getHex('ldr_r3_r3')
+            )
+
+        elif self.version == '6.1.3':
+            pattern = (
+                self.getHex('ldr_r2_r2'),
+                self.getHex('cmp_r2_0'),
+                self.getHex('itt_eq'),
+                self.getHex('eoreq_r6_r0_1')
+            )
+
+        return joinPatterns(pattern)
+
+    def form_vm_map_enter(self):
+        if self.version == '6.1.3':
+            pattern = (
+                self.getHex('cmp_r0_6'),
+                self.getHex('beq_8'),
+                self.getHex('str_r1_sp_x64'),
+                self.getHex('b_x2a')
+            )
+
+        return joinPatterns(pattern)
+
+    def form_tfp0(self):
+        if self.version == '6.1.3':
+            pattern = (
+                self.getHex('str_r1_sp_4'),
+                self.getHex('bne_x16')
+            )
+
+        return joinPatterns(pattern)
+
+    def form_AMFICertification(self):
+        if self.version == '6.1.3':
+            pattern = (
+                self.getHex('ldr_r2_sp_x338'),
+                self.getHex('cmp_r1_r2'),
+                self.getHex('ittt_eq'),
+                self.getHex('addeqw_sp_sp_x33c'),
+                b'\xbd\xe8'
+            )
+
+        return joinPatterns(pattern)
+
+    def form_Sandbox(self):
+        if self.version == '6.1.3':
+            pattern = (
+                self.getHex('ldr_r4_pc_x40'),
+                self.getHex('add_r4_pc'),
+                self.getHex('addw_r0_r4_x20'),
+                self.getHex('bl_x64da'),
+                self.getHex('ldr_r1_r4_8'),
+                self.getHex('mov_r0_r5'),
+                self.getHex('bl_x650a'),
+                self.getHex('mov_r4_r0'),
+                self.getHex('cbz_r4_x34'),
+                self.getHex('addw_r0_r4_x6c'),
+                self.getHex('movs_r1_1')
+            )
+
+        return joinPatterns(pattern)
+
+    def form_SandboxEntitlement(self):
+        if self.version == '6.1.3':
+            # com.apple.private.security.container-required
+            pattern = (
+                b'\x76',
+                b'\x61',
+                b'\x74',
+                b'\x65',
+                b'\x2e',
+                b'\x73',
+                b'\x65',
+                b'\x63',
+                b'\x75',
+                b'\x72',
+                b'\x69',
+                b'\x74',
+                b'\x79',
+                b'\x2e',
+                b'\x63',
+                b'\x6f',
+                b'\x6e',
+                b'\x74',
+                b'\x61'
             )
 
         return joinPatterns(pattern)
@@ -240,6 +383,14 @@ class Pattern:
                 self.getHex('blx_r6')
             )
 
+            return joinPatterns(
+                pattern1,
+                pattern2,
+                pattern3,
+                pattern4,
+                pattern5,
+            )
+
         elif self.version in ('5.1', '5.1.1'):
             if self.version == '5.1':
                 pattern1 = (
@@ -319,13 +470,31 @@ class Pattern:
                 self.getHex('blx_r6')
             )
 
-        return joinPatterns(
-            pattern1,
-            pattern2,
-            pattern3,
-            pattern4,
-            pattern5,
-        )
+            return joinPatterns(
+                pattern1,
+                pattern2,
+                pattern3,
+                pattern4,
+                pattern5,
+            )
+
+        if self.version == '6.1.3':
+            pattern1 = (
+                self.getHex('bnew_x220'),
+                self.getHex('ldr_r0_sp_x10'),
+                self.getHex('bl_x4e2'),
+                self.getHex('movw_r4_x2e2')
+            )
+
+            pattern2 = (
+                self.getHex('cmp_r0_0'),
+                self.getHex('movt_r4_xe000'),
+                self.getHex('bnew_x212'),
+                self.getHex('mov_r1_r6'),
+                b'\x40\xf2'
+            )
+
+            return joinPatterns(pattern1, pattern2)
 
     def form_signatureCheck(self):
         if self.version in ('5.0', '5.0.1'):
