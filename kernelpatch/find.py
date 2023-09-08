@@ -43,16 +43,36 @@ class Find:
 
         match = self.findPattern(xnu_string)
 
+        xnu_version = None
+
+        if not match:
+            darwin = b'Darwin Kernel Ve'
+            darwin_len = len(darwin)
+
+            match = self.findPattern(darwin)
+
+            if match:
+                offset = hexStringToHexInt(match)
+
+                buffer = self.data[offset:offset+darwin_len+90]
+
+                buffer_end = buffer.index(b'X') + 1
+
+                buffer = buffer[:buffer_end]
+
+                xnu_version = buffer.split(xnu_string + b'-')[1].split(b'/')[0].decode()
+
+        else:
+            offset = hexStringToHexInt(match)
+
+            buffer = self.data[offset:offset+xnu_string_len+20]
+
+            xnu_version = buffer.decode().split('/')[0].split(f'{xnu_string.decode()}-')[1]
+
         if not match:
             raise Exception('Could not find kernel version string!')
 
-        offset = hexStringToHexInt(match)
-
-        buffer = self.data[offset:offset+xnu_string_len+20]
-
-        version = buffer.decode().split('/')[0].split(f'{xnu_string.decode()}-')[1]
-
-        return version
+        return xnu_version
 
     def findOffsets(self, patterns, print_hex=False):
         offsets = []

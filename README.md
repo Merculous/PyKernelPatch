@@ -30,9 +30,5 @@ very close or exactly the same. Only real differences between devices is where
 everything gets loaded. 5.x have been tested and all of them restore without
 issues.
 
-# Issues
-
-iOS 4 and 6 are not supported currently. I'm not aware of what needs to be fixed,
-but I will look into it when I get the chance. For iOS 6, it is restored_external
-related. I'm not sure what to do, however it involves tickets. I'm assuming ApTicket?
-Anyway, I will be focusing on adding jailbreak support for iOS 5 for now.
+iOS 6.1.3 support was added as of version 1.0.5. This is also the best version
+so far since it contains fixes to the code itself.
