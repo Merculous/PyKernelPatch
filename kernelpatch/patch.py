@@ -85,7 +85,7 @@ class Patch(Find):
         version = self.pattern_obj.version
 
         for offset, pattern in offsets:
-            if version != '6.1.3':
+            if version in ('5.0', '5.0.1', '5.1', '5.1.1'):
                 if b'\xe0\x47' in pattern:
                     patch = (b'\xe0\x47', b'\x00\x20')
 
@@ -95,7 +95,7 @@ class Patch(Find):
                 elif b'\xb0\x47' in pattern:
                     patch = (b'\xb0\x47', b'\x01\x20')
 
-            else:
+            elif version in ('6.0', '6.1.3'):
                 if b'\x40\xf0\x0e\x81' in pattern:
                     patch = (b'\x40\xf0\x0e\x81', b'\x00\x20\x00\x20')
 

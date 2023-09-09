@@ -12,6 +12,7 @@ class Find:
             '5.1.1': '1878.11.10~1'
         },
         '6.x': {
+            '6.0': '2107.2.33~4',
             '6.1.3': '2107.7.55.2.2~1'
         }
     }
@@ -228,13 +229,16 @@ class Find:
                         pass
 
                     elif base == '6.x':
-                        to_find['cs_enforcement'] = True
-                        to_find['vm_map_enter'] = True
-                        to_find['tfp0'] = True
-                        to_find['amfi_certification'] = True
-                        to_find['sandbox'] = True
-                        to_find['sandbox_entitlement'] = True
-                        to_find['apple_image3_nor_access'] = True
+                        if xnu_version in ('6.0', '6.1.3'):
+                            if xnu_version == '6.1.3':
+                                to_find['cs_enforcement'] = True
+                                to_find['amfi_certification'] = True
+                                to_find['sandbox'] = True
+                                to_find['sandbox_entitlement'] = True
+
+                            to_find['vm_map_enter'] = True
+                            to_find['tfp0'] = True
+                            to_find['apple_image3_nor_access'] = True
 
         self.pattern_obj = Pattern(xnu_version)
 

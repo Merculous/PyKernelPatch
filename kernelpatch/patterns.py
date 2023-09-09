@@ -39,7 +39,15 @@ class Pattern:
 
             'ldr_r1_r4_8': b'\xa1\x68',
 
-            'ldr_r0_sp_x10': b'\x04\x98'
+            'ldr_r0_sp_x10': b'\x04\x98',
+
+            'ldrb_r0_r1_x10_!': b'\x11\xf8\x10\x0f',
+
+            'ldrb_r2_r6_x11': b'\x72\x7c',
+
+            'ldrb_r3_r1_3': b'\xcb\x78',
+
+            'ldrb_r1_r1_2': b'\x89\x78'
 
         },
         'mov': {
@@ -117,7 +125,10 @@ class Pattern:
 
         },
         'and': {
-            'andw_r0_r1_6': b'\x01\xf0\x06\x00'
+            'andw_r0_r1_6': b'\x01\xf0\x06\x00',
+
+            'and_r0_r0_6': b'\x00\xf0\x06\x00'
+
         },
         'pop': {
             'popw_r8_r10_r11': b'\xbd\xe8\x00\x0d',
@@ -189,7 +200,9 @@ class Pattern:
 
             'bl_x4e2': b'\x00\xf0\x6c\xfa',
 
-            'bnew_x212': b'\x40\xf0\x04\x81'
+            'bnew_x212': b'\x40\xf0\x04\x81',
+
+            'bl_xdc0': b'\x00\xf0\xde\xfe'
 
         },
         'or': {
@@ -230,7 +243,16 @@ class Pattern:
         return joinPatterns(pattern)
 
     def form_vm_map_enter(self):
-        if self.version == '6.1.3':
+        if self.version == '6.0':
+            pattern = (
+                self.getHex('and_r0_r0_6'),
+                self.getHex('cmp_r0_6'),
+                self.getHex('beq_8'),
+                self.getHex('str_r1_sp_x64'),
+                self.getHex('b_x2a'),
+            )
+
+        elif self.version == '6.1.3':
             pattern = (
                 self.getHex('cmp_r0_6'),
                 self.getHex('beq_8'),
@@ -241,7 +263,7 @@ class Pattern:
         return joinPatterns(pattern)
 
     def form_tfp0(self):
-        if self.version == '6.1.3':
+        if self.version in ('6.0', '6.1.3'):
             pattern = (
                 self.getHex('str_r1_sp_4'),
                 self.getHex('bne_x16')
@@ -477,6 +499,44 @@ class Pattern:
                 pattern4,
                 pattern5,
             )
+
+        if self.version == '6.0':
+            pattern1 = (
+                self.getHex('ldr_r0_sp_x10'),
+                self.getHex('movs_r1_2'),
+                self.getHex('bl_xdc0'),
+                self.getHex('movw_r4_x2e2'),
+                self.getHex('cmp_r0_0'),
+                self.getHex('movt_r4_xe000'),
+                self.getHex('bnew_x220'),
+                self.getHex('ldr_r0_sp_x10'),
+                self.getHex('bl_x4e2'),
+                self.getHex('movw_r4_x2e2'),
+                self.getHex('cmp_r0_0'),
+                self.getHex('movt_r4_xe000'),
+                self.getHex('bnew_x212'),
+                self.getHex('mov_r1_r6'),
+                self.getHex('movw_r4_x2e2'),
+                self.getHex('ldrb_r0_r1_x10_!'),
+                self.getHex('movt_r4_xe000'),
+                self.getHex('ldrb_r2_r6_x11'),
+                self.getHex('ldrb_r3_r1_3'),
+                self.getHex('ldrb_r1_r1_2'),
+                b'\x40\xea'
+            )
+
+            pattern2 = (
+                self.getHex('ldr_r0_sp_x10'),
+                self.getHex('bl_x4e2'),
+                self.getHex('movw_r4_x2e2'),
+                self.getHex('cmp_r0_0'),
+                self.getHex('movt_r4_xe000'),
+                self.getHex('bnew_x212'),
+                self.getHex('mov_r1_r6'),
+                b'\x40',
+            )
+
+            return joinPatterns(pattern1, pattern2)
 
         if self.version == '6.1.3':
             pattern1 = (
