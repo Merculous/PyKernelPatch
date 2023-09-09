@@ -30,5 +30,6 @@ very close or exactly the same. Only real differences between devices is where
 everything gets loaded. 5.x have been tested and all of them restore without
 issues.
 
-iOS 6.1.3 support was added as of version 1.0.5. This is also the best version
-so far since it contains fixes to the code itself.
+iOS 6.0 and 6.1.3 are supported in 1.0.6. Version 1.0.5 should not be used
+as I forgot to add a few lines to have 5.x work again. Please use >=1.0.6 for
+all use cases.

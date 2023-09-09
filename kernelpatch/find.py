@@ -226,7 +226,10 @@ class Find:
                     xnu_version = version
 
                     if base == '5.x':
-                        pass
+                        to_find['cs_enforcement'] = True
+                        to_find['amfi_memcmp'] = True
+                        to_find['apple_image3_nor_access'] = True
+                        to_find['signature_check'] = True
 
                     elif base == '6.x':
                         if xnu_version in ('6.0', '6.1.3'):
