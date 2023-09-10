@@ -95,7 +95,7 @@ class Patch(Find):
                 elif b'\xb0\x47' in pattern:
                     patch = (b'\xb0\x47', b'\x01\x20')
 
-            elif version in ('6.0', '6.1.3'):
+            elif version in ('6.0', '6.1', '6.1.3'):
                 if b'\x40\xf0\x0e\x81' in pattern:
                     patch = (b'\x40\xf0\x0e\x81', b'\x00\x20\x00\x20')
 

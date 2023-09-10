@@ -13,6 +13,7 @@ class Find:
         },
         '6.x': {
             '6.0': '2107.2.33~4',
+            '6.1': '2107.7.55~11',
             '6.1.3': '2107.7.55.2.2~1'
         }
     }
@@ -232,7 +233,7 @@ class Find:
                         to_find['signature_check'] = True
 
                     elif base == '6.x':
-                        if xnu_version in ('6.0', '6.1.3'):
+                        if xnu_version in ('6.0', '6.1', '6.1.3'):
                             if xnu_version == '6.1.3':
                                 to_find['cs_enforcement'] = True
                                 to_find['amfi_certification'] = True

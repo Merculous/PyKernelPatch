@@ -47,7 +47,15 @@ class Pattern:
 
             'ldrb_r3_r1_3': b'\xcb\x78',
 
-            'ldrb_r1_r1_2': b'\x89\x78'
+            'ldrb_r1_r1_2': b'\x89\x78',
+
+            'ldrb_r1_r0_4!': b'\x10\xf8\x04\x1f',
+
+            'ldrb_r2_r6_5': b'\x72\x79',
+
+            'ldrb_r3_r0_3': b'\xc3\x78',
+
+            'ldrb_r4_r0_2': b'\x84\x78'
 
         },
         'mov': {
@@ -93,7 +101,11 @@ class Pattern:
 
             'movt_r4_xe000': b'\xce\xf2\x00\x04',
 
-            'mov_r1_r6': b'\x31\x46'
+            'mov_r1_r6': b'\x31\x46',
+
+            'movw_r2_x6c62': b'\x46\xf6\x62\x42',
+
+            'movt_r2_x696c': b'\xc6\xf6\x6c\x12'
 
         },
         'cmp': {
@@ -105,7 +117,9 @@ class Pattern:
 
             'cmp_r2_0': b'\x00\x2a',
 
-            'cmp_r1_r2': b'\x91\x42'
+            'cmp_r1_r2': b'\x91\x42',
+
+            'cmp_r0_r2': b'\x90\x42',
 
         },
         'str': {
@@ -202,11 +216,23 @@ class Pattern:
 
             'bnew_x212': b'\x40\xf0\x04\x81',
 
-            'bl_xdc0': b'\x00\xf0\xde\xfe'
+            'bl_xdc0': b'\x00\xf0\xde\xfe',
+
+            'bnew_x1f4': b'\x40\xf0\xed\x80',
+
+            'bl_x10ea': b'\x01\xf0\x73\xf8',
+
+            'bnew_x23a': b'\x40\xf0\x19\x81'
 
         },
         'or': {
-            'eoreq_r6_r0_1': b'\x80\xf0\x01\x06'
+            'eoreq_r6_r0_1': b'\x80\xf0\x01\x06',
+
+            'orrw_r0_r0_r2_lsl_8': b'\x40\xea\x02\x20',
+
+            'orrw_r0_r0_r1_lsl_16': b'\x40\xea\x01\x40',
+
+            'orrw_r1_r1_r3_lsl_8': b'\x41\xea\x03\x21',
         }
     }
 
@@ -224,6 +250,12 @@ class Pattern:
         for base in self.instructions:
             if instruction in self.instructions[base]:
                 return self.instructions[base][instruction]
+
+    def getInstruction(self, value):
+        for base in self.instructions:
+            for instruction in self.instructions[base]:
+                if self.instructions[base][instruction] == value:
+                    return instruction
 
     def form_CSEnforcement(self):
         if self.version in ('5.0', '5.0.1', '5.1', '5.1.1'):
@@ -252,7 +284,7 @@ class Pattern:
                 self.getHex('b_x2a'),
             )
 
-        elif self.version == '6.1.3':
+        elif self.version in ('6.1', '6.1.3'):
             pattern = (
                 self.getHex('cmp_r0_6'),
                 self.getHex('beq_8'),
@@ -263,7 +295,7 @@ class Pattern:
         return joinPatterns(pattern)
 
     def form_tfp0(self):
-        if self.version in ('6.0', '6.1.3'):
+        if self.version in ('6.0', '6.1', '6.1.3'):
             pattern = (
                 self.getHex('str_r1_sp_4'),
                 self.getHex('bne_x16')
@@ -500,7 +532,7 @@ class Pattern:
                 pattern5,
             )
 
-        if self.version == '6.0':
+        elif self.version == '6.0':
             pattern1 = (
                 self.getHex('ldr_r0_sp_x10'),
                 self.getHex('movs_r1_2'),
@@ -538,7 +570,50 @@ class Pattern:
 
             return joinPatterns(pattern1, pattern2)
 
-        if self.version == '6.1.3':
+        elif self.version == '6.1':
+            # Yes, this is the shortest -___-
+            pattern1 = (
+                b'\x24',
+                self.getHex('cmp_r0_0'),
+                self.getHex('movt_r4_xe000'),
+                self.getHex('bnew_x220'),
+                self.getHex('ldr_r0_sp_x10'),
+                self.getHex('bl_x4e2'),
+                self.getHex('movw_r4_x2e2'),
+                self.getHex('cmp_r0_0'),
+                self.getHex('movt_r4_xe000'),
+                self.getHex('bnew_x212'),
+                self.getHex('mov_r1_r6'),
+                self.getHex('movw_r4_x2e2'),
+                self.getHex('ldrb_r0_r1_x10_!'),
+                self.getHex('movt_r4_xe000'),
+                self.getHex('ldrb_r2_r6_x11'),
+                self.getHex('ldrb_r3_r1_3'),
+                self.getHex('ldrb_r1_r1_2'),
+                self.getHex('orrw_r0_r0_r2_lsl_8'),
+                self.getHex('movw_r2_x6c62'),
+                self.getHex('orrw_r1_r1_r3_lsl_8'),
+                self.getHex('movt_r2_x696c'),
+                self.getHex('orrw_r0_r0_r1_lsl_16'),
+                self.getHex('cmp_r0_r2'),
+                self.getHex('bnew_x1f4'),
+                self.getHex('mov_r0_r6'),
+                self.getHex('ldrb_r1_r0_4!'),
+                self.getHex('ldrb_r2_r6_5'),
+                self.getHex('ldrb_r3_r0_3'),
+                self.getHex('ldrb_r4_r0_2')
+            )
+
+            pattern2 = (
+                self.getHex('movt_r4_xe000'),
+                self.getHex('bnew_x212'),
+                self.getHex('mov_r1_r6'),
+                self.getHex('movw_r4_x2e2'),
+            )
+
+            return joinPatterns(pattern1, pattern2)
+
+        elif self.version == '6.1.3':
             pattern1 = (
                 self.getHex('bnew_x220'),
                 self.getHex('ldr_r0_sp_x10'),
