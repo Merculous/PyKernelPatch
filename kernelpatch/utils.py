@@ -39,6 +39,7 @@ def readIDAAssembly(lines):
                     values.append(value.lower())
 
         if values:
-            new.append(''.join([f'\\x{v}' for v in values]))
+            byte_string = "'" + ''.join([f"\\x{v}" for v in values]) + "',"
+            new.append(byte_string)
 
     return tuple(new)
