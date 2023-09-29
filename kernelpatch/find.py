@@ -1,10 +1,14 @@
 
+from .file import readBinaryFile
 from .patterns import Pattern
-from .utils import formatBytes, hexStringToHexInt
+from .utils import hexStringToHexInt, joinPatterns
 
 
-class Find:
-    kernel_versions = {
+class Find(Pattern):
+    versions = {
+        '4.x': {
+            '4.3.3': '1735.46~10'
+        },
         '5.x': {
             '5.0': '1878.4.43~2',
             '5.0.1': '1878.4.46~1',
@@ -18,259 +22,269 @@ class Find:
         }
     }
 
-    def __init__(self, data):
-        self.data = data
+    def __init__(self, arch, mode, path):
+        super().__init__(arch, mode)
 
-    def findPattern(self, pattern, print_hex=False):
+        self.path = path
+        self.data = readBinaryFile(self.path)
+
+    def find(self, pattern):
+        pattern_len = len(pattern)
         data_len = len(self.data)
-        pattern_len = len(pattern)
 
-        if not print_hex:
-            print(f'Looking for pattern: {pattern}')
-        else:
-            print(f'Looking for pattern: {formatBytes(pattern)}')
+        # KPM Algorithm
+        # Code is based ("copied") off of this video
+        # https://www.youtube.com/watch?v=JoF0Z7nVSrA
 
-        for i in range(0, data_len, pattern_len):
-            buffer = self.data[i:i+pattern_len]
+        lps = [0] * pattern_len
 
-            i_hex = hex(i)
+        prevLPS, i = 0, 1
 
-            if pattern == buffer:
-                print(f'Found pattern at offset: {i_hex}')
-                return i_hex
+        # Setup LPS to determine prefix/suffix matches
 
-    def find_KernelVersion(self):
-        xnu_string = b'root:xnu'
-        xnu_string_len = len(xnu_string)
+        while i < pattern_len:
+            # Values match
 
-        match = self.findPattern(xnu_string)
+            if pattern[i] == pattern[prevLPS]:
+                lps[i] = prevLPS + 1
+                prevLPS += 1
+                i += 1
 
-        xnu_version = None
+            # Values differ
 
-        if not match:
-            darwin = b'Darwin Kernel Ve'
-            darwin_len = len(darwin)
+            elif prevLPS == 0:
+                lps[i] = 0
+                i += 1
 
-            match = self.findPattern(darwin)
+            else:
+                print(lps)
+                prevLPS = lps[prevLPS - 1]
 
-            if match:
-                offset = hexStringToHexInt(match)
+        # Search through the data
 
-                buffer = self.data[offset:offset+darwin_len+90]
+        i, j = 0, 0
 
-                buffer_end = buffer.index(b'X') + 1
+        while i < data_len:
+            if self.data[i] == pattern[j]:
+                # Values matched
 
-                buffer = buffer[:buffer_end]
+                i, j = i + 1, j + 1
 
-                xnu_version = buffer.split(xnu_string + b'-')[1].split(b'/')[0].decode()
+            else:
+                if j == 0:
+                    # Values differ
 
-        else:
-            offset = hexStringToHexInt(match)
-
-            buffer = self.data[offset:offset+xnu_string_len+20]
-
-            xnu_version = buffer.decode().split('/')[0].split(f'{xnu_string.decode()}-')[1]
-
-        if not match:
-            raise Exception('Could not find kernel version string!')
-
-        return xnu_version
-
-    def findOffsets(self, patterns, print_hex=False):
-        offsets = []
-
-        for pattern in patterns:
-            offset = self.findPattern(pattern, print_hex)
-
-            if offset:
-                offsets.append((offset, pattern))
-
-        if offsets:
-            return tuple(offsets)
-        else:
-            return None
-
-    def crunchPatternUntilTrue(self, pattern, control):
-        pattern_len = len(pattern)
-
-        matches = []
-
-        # Look for the pattern
-
-        result = self.findPattern(pattern)
-
-        if result:
-            matches.append((result, formatBytes(pattern)))
-            result = None
-
-            # We found a match.
-            # Crunch anyway just in case we manage to find
-            # a match that's smaller than the original.
-            # This is just so we can shorten the pattern,
-            # if possible.
-
-        # Search left -> Right
-        # Remove 1 byte from the front
-
-        if not result:
-            for i in range(1, pattern_len):
-                buffer = pattern[i:]
-
-                while control in buffer:
-                    result = self.findPattern(buffer, True)
-
-                    if result:
-                        matches.append((result, formatBytes(buffer)))
-                        result = None
-
-                    break
+                    i += 1
                 else:
-                    break
+                    j = lps[j - 1]
 
-        if not result:
-            for i in range(1, pattern_len):
-                buffer = pattern[:-i]
+            if j == pattern_len:
+                offset = hex(i - pattern_len)
+                print(f'Found pattern at offset: {offset}')
+                return offset
 
-                result = self.findPattern(buffer, True)
+        print('Did not find pattern!')
+        return None
 
-                while control in buffer:
-                    result = self.findPattern(buffer, True)
+    def find_debug_enabled(self):
+        patterns = self.form_debug_enabled()
 
-                    if result:
-                        matches.append((result, formatBytes(buffer)))
-                        result = None
+        print('debug_enabled')
 
-                    break
-                else:
-                    break
+        pattern = joinPatterns(patterns)[0]
 
-        if not result:
-            for i in range(1, pattern_len):
-                buffer = pattern[i:-i]
+        match = self.find(pattern)
 
-                result = self.findPattern(buffer, True)
-
-                while control in buffer:
-                    result = self.findPattern(buffer, True)
-
-                    if result:
-                        matches.append((result, formatBytes(buffer)))
-                        result = None
-
-                    break
-                else:
-                    break
-
-        if matches:
-            return tuple(matches)
-        else:
-            return None
-
-    def find_CSEnforcement(self):
-        patterns = self.pattern_obj.form_CSEnforcement()
-        return self.findOffsets(patterns)
+        return (match, pattern)
 
     def find_vm_map_enter(self):
-        patterns = self.pattern_obj.form_vm_map_enter()
-        return self.findOffsets(patterns)
+        patterns = self.form_vm_map_enter()
 
-    def find_tfp0(self):
-        patterns = self.pattern_obj.form_tfp0()
-        return self.findOffsets(patterns)
+        print('vm_map_enter')
 
-    def find_AMFICertification(self):
-        patterns = self.pattern_obj.form_AMFICertification()
-        return self.findOffsets(patterns)
+        for pattern in patterns:
+            instruction = self.convertBytesToInstruction(pattern)
+            print(f'Looking for pattern: {instruction}')
 
-    def find_Sandbox(self):
-        patterns = self.pattern_obj.form_Sandbox()
-        return self.findOffsets(patterns)
+        pattern = joinPatterns(patterns)[0]
 
-    def find_SandboxEntitlement(self):
-        patterns = self.pattern_obj.form_SandboxEntitlement()
-        return self.findOffsets(patterns)
+        match = self.find(pattern)
 
-    def find_AMFIMemcmp(self):
-        patterns = self.pattern_obj.form_AMFIMemcmp()
-        return self.findOffsets(patterns)
+        return (match, pattern)
 
-    def find_AppleImage3NORAccess(self):
-        patterns = self.pattern_obj.form_AppleImage3NORAccess()
-        return self.findOffsets(patterns)
+    def find_amfi_memcmp(self):
+        patterns = self.form_amfi_memcmp()
 
-    def find_signatureCheck(self):
-        patterns = self.pattern_obj.form_signatureCheck()
-        return self.findOffsets(patterns)
+        print('amfi_memcmp')
+
+        for pattern in patterns:
+            instruction = self.convertBytesToInstruction(pattern)
+            print(f'Looking for pattern: {instruction}')
+
+        pattern = joinPatterns(patterns)[0]
+
+        match = self.find(pattern)
+
+        return (match, pattern)
+
+    def find_amfi_trust_cache(self):
+        patterns = self.form_amfi_trust_cache()
+
+        print('amfi_signature')
+
+        for pattern in patterns:
+            instruction = self.convertBytesToInstruction(pattern)
+            print(f'Looking for pattern: {instruction}')
+
+        pattern = joinPatterns(patterns)[0]
+
+        match = self.find(pattern)
+
+        return (match, pattern)
+
+    def find_nor_signature(self):
+        patterns = self.form_nor_signature()
+
+        print('nor_signature')
+
+        for pattern in patterns:
+            instruction = self.convertBytesToInstruction(pattern)
+            print(f'Looking for pattern: {instruction}')
+
+        pattern = joinPatterns(patterns)[0]
+
+        match = self.find(pattern)
+
+        return (match, pattern)
+
+    def find_nor_llb_1(self):
+        patterns = self.form_nor_llb_1()
+
+        print('nor_llb_1')
+
+        for pattern in patterns:
+            instruction = self.convertBytesToInstruction(pattern)
+            print(f'Looking for pattern: {instruction}')
+
+        pattern = joinPatterns(patterns)[0]
+
+        match = self.find(pattern)
+
+        return (match, pattern)
+
+    def find_nor_llb_2(self):
+        patterns = self.form_nor_llb_2()
+
+        print('nor_llb_2')
+
+        for pattern in patterns:
+            instruction = self.convertBytesToInstruction(pattern)
+            print(f'Looking for pattern: {instruction}')
+
+        pattern = joinPatterns(patterns)[0]
+
+        match = self.find(pattern)
+
+        return (match, pattern)
+
+    def find_nor_llb_3(self):
+        patterns = self.form_nor_llb_3()
+
+        print('nor_llb_3')
+
+        for pattern in patterns:
+            instruction = self.convertBytesToInstruction(pattern)
+            print(f'Looking for pattern: {instruction}')
+
+        pattern = joinPatterns(patterns)[0]
+
+        match = self.find(pattern)
+
+        return (match, pattern)
+
+    def find_nor_llb_4(self):
+        patterns = self.form_nor_llb_4()
+
+        print('nor_llb_4')
+
+        for pattern in patterns:
+            instruction = self.convertBytesToInstruction(pattern)
+            print(f'Looking for pattern: {instruction}')
+
+        pattern = joinPatterns(patterns)[0]
+
+        match = self.find(pattern)
+
+        return (match, pattern)
+
+    def getVersion(self):
+        pattern = b'root:xnu'
+        pattern_len = len(pattern)
+
+        offset = self.find(pattern)
+        offset = hexStringToHexInt(offset)
+
+        buffer = self.data[offset:offset+pattern_len+25]
+
+        version = buffer.split(b'-')[1].split(b'/')[0].decode()
+        return version
 
     def findAllOffsets(self):
-        version_string = self.find_KernelVersion()
+        version_string = self.getVersion()
 
         to_find = {
-            'cs_enforcement': False,
+            'debug_enabled': False,
             'vm_map_enter': False,
-            'tfp0': False,
-            'amfi_certification': False,
-            'sandbox': False,
-            'sandbox_entitlement': False,
             'amfi_memcmp': False,
-            'apple_image3_nor_access': False,
-            'signature_check': False
+            'amfi_trust_cache': False,
+            'nor_signature': False,
+            'nor_llb_1': False,
+            'nor_llb_2': False,
+            'nor_llb_3': False,
+            'nor_llb_4': False
         }
 
-        xnu_version = None
-
-        for base in self.kernel_versions:
-            versions = self.kernel_versions[base]
+        for base in self.versions:
+            versions = self.versions[base]
 
             for version in versions:
                 if versions[version] == version_string:
-                    xnu_version = version
-
-                    if base == '5.x':
-                        to_find['cs_enforcement'] = True
+                    if base == '4.x':
+                        to_find['debug_enabled'] = True
+                        to_find['vm_map_enter'] = True
                         to_find['amfi_memcmp'] = True
-                        to_find['apple_image3_nor_access'] = True
-                        to_find['signature_check'] = True
+                        to_find['amfi_trust_cache'] = True
+                        to_find['nor_signature'] = True
+                        to_find['nor_llb_1'] = True
+                        to_find['nor_llb_2'] = True
+                        to_find['nor_llb_3'] = True
+                        to_find['nor_llb_4'] = True
 
-                    elif base == '6.x':
-                        if xnu_version in ('6.0', '6.1', '6.1.3'):
-                            if xnu_version == '6.1.3':
-                                to_find['cs_enforcement'] = True
-                                to_find['amfi_certification'] = True
-                                to_find['sandbox'] = True
-                                to_find['sandbox_entitlement'] = True
-
-                            to_find['vm_map_enter'] = True
-                            to_find['tfp0'] = True
-                            to_find['apple_image3_nor_access'] = True
-
-        self.pattern_obj = Pattern(xnu_version)
-
-        if to_find['cs_enforcement']:
-            to_find['cs_enforcement'] = self.find_CSEnforcement()
+        if to_find['debug_enabled']:
+            to_find['debug_enabled'] = self.find_debug_enabled()
 
         if to_find['vm_map_enter']:
             to_find['vm_map_enter'] = self.find_vm_map_enter()
 
-        if to_find['tfp0']:
-            to_find['tfp0'] = self.find_tfp0()
-
-        if to_find['amfi_certification']:
-            to_find['amfi_certification'] = self.find_AMFICertification()
-
-        if to_find['sandbox']:
-            to_find['sandbox'] = self.find_Sandbox()
-
-        if to_find['sandbox_entitlement']:
-            to_find['sandbox_entitlement'] = self.find_SandboxEntitlement()
-
         if to_find['amfi_memcmp']:
-            to_find['amfi_memcmp'] = self.find_AMFIMemcmp()
+            to_find['amfi_memcmp'] = self.find_amfi_memcmp()
 
-        if to_find['apple_image3_nor_access']:
-            to_find['apple_image3_nor_access'] = self.find_AppleImage3NORAccess()
+        if to_find['amfi_trust_cache']:
+            to_find['amfi_trust_cache'] = self.find_amfi_trust_cache()
 
-        if to_find['signature_check']:
-            to_find['signature_check'] = self.find_signatureCheck()
+        if to_find['nor_signature']:
+            to_find['nor_signature'] = self.find_nor_signature()
+
+        if to_find['nor_llb_1']:
+            to_find['nor_llb_1'] = self.find_nor_llb_1()
+
+        if to_find['nor_llb_2']:
+            to_find['nor_llb_2'] = self.find_nor_llb_2()
+
+        if to_find['nor_llb_3']:
+            to_find['nor_llb_3'] = self.find_nor_llb_3()
+
+        if to_find['nor_llb_4']:
+            to_find['nor_llb_4'] = self.find_nor_llb_4()
 
         return to_find

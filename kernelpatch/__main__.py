@@ -1,7 +1,8 @@
 
 from argparse import ArgumentParser
 
-from .file import readBinaryFile, readTextFile, writeBinaryFile
+from .config import ARCH, MODE
+from .file import readTextFile, writeBinaryFile
 from .patch import Patch
 from .utils import readIDAAssembly
 
@@ -15,6 +16,8 @@ def main():
     parser.add_argument('--diff', action='store_true')
     parser.add_argument('--patch', action='store_true')
 
+    parser.add_argument('--test', action='store_true')
+
     args = parser.parse_args()
 
     if args.diff:
@@ -23,9 +26,9 @@ def main():
 
     elif args.patch:
         if args.orig and args.patched:
-            data = readBinaryFile(args.orig[0])
-            patched = Patch(data).patchKernel()
-            writeBinaryFile(args.patched[0], patched)
+            patch = Patch(ARCH, MODE, args.orig[0])
+            data = patch.patch()
+            writeBinaryFile(args.patched[0], data)
 
     elif args.convert:
         lines = readTextFile(args.convert[0])

@@ -19,7 +19,7 @@ def hexStringToHexInt(data):
 
 
 def readIDAAssembly(lines):
-    split = [l.split()[1:] for l in lines]
+    split = [line.split()[1:] for line in lines]
 
     new = []
 

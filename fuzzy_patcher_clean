@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+
+import json
+import sys
+
+
+def readJSONFile(path):
+    with open(path) as f:
+        return json.load(f)
+
+
+def writeJSONFile(path, data):
+    with open(path, 'w') as f:
+        json.dump(data, f, indent=2)
+
+
+def clean(data):
+    patches = data['patches']
+
+    cleaned = []
+
+    for patch in patches:
+        new = {
+            'pattern': None,
+            'patched': None,
+            'original': None,
+            'index': None,
+            'offset': None
+        }
+
+        pattern = patch['patternBytes'].replace(' ', '')
+
+        patched = patch['patchBytes'].replace(' ', '')
+
+        patched_len = len(patched)
+
+        index = int(patch['patchOffset']) * 2
+
+        original = pattern[index:index+patched_len]
+
+        offset = patch['comment'].split()[-1]
+
+        new['pattern'] = pattern
+        new['patched'] = patched
+        new['original'] = original
+        new['index'] = index
+        new['offset'] = offset
+
+        cleaned.append(new)
+
+    return cleaned
+
+
+def main(args):
+    if len(args) == 3:
+        in_path = args[1]
+        out_path = args[2]
+
+        file_data = readJSONFile(in_path)
+
+        cleaned = clean(file_data)
+
+        writeJSONFile(out_path, cleaned)
+
+    else:
+        print('Usage: <fuzzy_patcher json> <new (cleaned)>')
+
+
+if __name__ == '__main__':
+    main(sys.argv)
