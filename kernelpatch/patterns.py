@@ -55,6 +55,14 @@ class Pattern(Instructions):
 
     def form_nor_llb_1(self):
         pattern = (
+            b'\xff\xf7\x0c\xff',
+            b'\x00\x38'
+        )
+
+        return pattern
+
+    def form_nor_llb_2(self):
+        pattern = (
             b'\x02\x21',
             b'\x7c\x4b',
             b'\x98\x47',
@@ -63,7 +71,7 @@ class Pattern(Instructions):
 
         return pattern
 
-    def form_nor_llb_2(self):
+    def form_nor_llb_3(self):
         pattern = (
             b'\xff\xf7\xab\xfd',
             b'\x04\x46',
@@ -72,7 +80,7 @@ class Pattern(Instructions):
 
         return pattern
 
-    def form_nor_llb_3(self):
+    def form_nor_llb_4(self):
         pattern = (
             b'\xff\xf7\x50\xfc',
             b'\x00\xb3'
@@ -80,7 +88,7 @@ class Pattern(Instructions):
 
         return pattern
 
-    def form_nor_llb_4(self):
+    def form_nor_llb_5(self):
         pattern = (
             b'\x4f\xf0\xff\x30',
             b'\x2d\xe0'

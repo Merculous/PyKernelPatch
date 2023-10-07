@@ -1,7 +1,8 @@
 
-from .file import readBinaryFile
 from .patterns import Pattern
 from .utils import hexStringToHexInt, joinPatterns
+
+from binpatch.file import readBinaryFromPath
 
 
 class Find(Pattern):
@@ -26,7 +27,7 @@ class Find(Pattern):
         super().__init__(arch, mode)
 
         self.path = path
-        self.data = readBinaryFile(self.path)
+        self.data = readBinaryFromPath(self.path)
 
     def find(self, pattern):
         pattern_len = len(pattern)
@@ -57,7 +58,7 @@ class Find(Pattern):
                 i += 1
 
             else:
-                print(lps)
+                # print(lps)
                 prevLPS = lps[prevLPS - 1]
 
         # Search through the data
@@ -217,6 +218,21 @@ class Find(Pattern):
 
         return (match, pattern)
 
+    def find_nor_llb_5(self):
+        patterns = self.form_nor_llb_5()
+
+        print('nor_llb_5')
+
+        for pattern in patterns:
+            instruction = self.convertBytesToInstruction(pattern)
+            print(f'Looking for pattern: {instruction}')
+
+        pattern = joinPatterns(patterns)[0]
+
+        match = self.find(pattern)
+
+        return (match, pattern)
+
     def getVersion(self):
         pattern = b'root:xnu'
         pattern_len = len(pattern)
@@ -241,7 +257,8 @@ class Find(Pattern):
             'nor_llb_1': False,
             'nor_llb_2': False,
             'nor_llb_3': False,
-            'nor_llb_4': False
+            'nor_llb_4': False,
+            'nor_llb_5': False
         }
 
         for base in self.versions:
@@ -259,6 +276,7 @@ class Find(Pattern):
                         to_find['nor_llb_2'] = True
                         to_find['nor_llb_3'] = True
                         to_find['nor_llb_4'] = True
+                        to_find['nor_llb_5'] = True
 
         if to_find['debug_enabled']:
             to_find['debug_enabled'] = self.find_debug_enabled()
@@ -286,5 +304,8 @@ class Find(Pattern):
 
         if to_find['nor_llb_4']:
             to_find['nor_llb_4'] = self.find_nor_llb_4()
+
+        if to_find['nor_llb_5']:
+            to_find['nor_llb_5'] = self.find_nor_llb_5()
 
         return to_find
