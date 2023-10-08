@@ -87,151 +87,54 @@ class Find(Pattern):
         print('Did not find pattern!')
         return None
 
-    def find_debug_enabled(self):
-        patterns = self.form_debug_enabled()
-
-        print('debug_enabled')
+    def findOffset(self, patterns):
+        for pattern in patterns:
+            instruction = self.convertBytesToInstruction(pattern)
+            print(f'Looking for pattern: {instruction}')
 
         pattern = joinPatterns(patterns)[0]
-
         match = self.find(pattern)
-
         return (match, pattern)
+
+    def find_debug_enabled(self):
+        patterns = self.form_debug_enabled()
+        return self.findOffset(patterns)
 
     def find_vm_map_enter(self):
         patterns = self.form_vm_map_enter()
-
-        print('vm_map_enter')
-
-        for pattern in patterns:
-            instruction = self.convertBytesToInstruction(pattern)
-            print(f'Looking for pattern: {instruction}')
-
-        pattern = joinPatterns(patterns)[0]
-
-        match = self.find(pattern)
-
-        return (match, pattern)
+        return self.findOffset(patterns)
 
     def find_amfi_memcmp(self):
         patterns = self.form_amfi_memcmp()
-
-        print('amfi_memcmp')
-
-        for pattern in patterns:
-            instruction = self.convertBytesToInstruction(pattern)
-            print(f'Looking for pattern: {instruction}')
-
-        pattern = joinPatterns(patterns)[0]
-
-        match = self.find(pattern)
-
-        return (match, pattern)
+        return self.findOffset(patterns)
 
     def find_amfi_trust_cache(self):
         patterns = self.form_amfi_trust_cache()
-
-        print('amfi_signature')
-
-        for pattern in patterns:
-            instruction = self.convertBytesToInstruction(pattern)
-            print(f'Looking for pattern: {instruction}')
-
-        pattern = joinPatterns(patterns)[0]
-
-        match = self.find(pattern)
-
-        return (match, pattern)
+        return self.findOffset(patterns)
 
     def find_nor_signature(self):
         patterns = self.form_nor_signature()
-
-        print('nor_signature')
-
-        for pattern in patterns:
-            instruction = self.convertBytesToInstruction(pattern)
-            print(f'Looking for pattern: {instruction}')
-
-        pattern = joinPatterns(patterns)[0]
-
-        match = self.find(pattern)
-
-        return (match, pattern)
+        return self.findOffset(patterns)
 
     def find_nor_llb_1(self):
         patterns = self.form_nor_llb_1()
-
-        print('nor_llb_1')
-
-        for pattern in patterns:
-            instruction = self.convertBytesToInstruction(pattern)
-            print(f'Looking for pattern: {instruction}')
-
-        pattern = joinPatterns(patterns)[0]
-
-        match = self.find(pattern)
-
-        return (match, pattern)
+        return self.findOffset(patterns)
 
     def find_nor_llb_2(self):
         patterns = self.form_nor_llb_2()
-
-        print('nor_llb_2')
-
-        for pattern in patterns:
-            instruction = self.convertBytesToInstruction(pattern)
-            print(f'Looking for pattern: {instruction}')
-
-        pattern = joinPatterns(patterns)[0]
-
-        match = self.find(pattern)
-
-        return (match, pattern)
+        return self.findOffset(patterns)
 
     def find_nor_llb_3(self):
         patterns = self.form_nor_llb_3()
-
-        print('nor_llb_3')
-
-        for pattern in patterns:
-            instruction = self.convertBytesToInstruction(pattern)
-            print(f'Looking for pattern: {instruction}')
-
-        pattern = joinPatterns(patterns)[0]
-
-        match = self.find(pattern)
-
-        return (match, pattern)
+        return self.findOffset(patterns)
 
     def find_nor_llb_4(self):
         patterns = self.form_nor_llb_4()
-
-        print('nor_llb_4')
-
-        for pattern in patterns:
-            instruction = self.convertBytesToInstruction(pattern)
-            print(f'Looking for pattern: {instruction}')
-
-        pattern = joinPatterns(patterns)[0]
-
-        match = self.find(pattern)
-
-        return (match, pattern)
+        return self.findOffset(patterns)
 
     def find_nor_llb_5(self):
         patterns = self.form_nor_llb_5()
-
-        print('nor_llb_5')
-
-        for pattern in patterns:
-            instruction = self.convertBytesToInstruction(pattern)
-            print(f'Looking for pattern: {instruction}')
-
-        pattern = joinPatterns(patterns)[0]
-
-        match = self.find(pattern)
-
-        return (match, pattern)
+        return self.findOffset(patterns)
 
     def getVersion(self):
         pattern = b'root:xnu'
@@ -278,34 +181,16 @@ class Find(Pattern):
                         to_find['nor_llb_4'] = True
                         to_find['nor_llb_5'] = True
 
-        if to_find['debug_enabled']:
-            to_find['debug_enabled'] = self.find_debug_enabled()
+        for patch in to_find:
+            func_names = dir(self)
 
-        if to_find['vm_map_enter']:
-            to_find['vm_map_enter'] = self.find_vm_map_enter()
+            for func in func_names:
+                if func == f'find_{patch}':
+                    print(f'[*] {patch}')
+                    break
 
-        if to_find['amfi_memcmp']:
-            to_find['amfi_memcmp'] = self.find_amfi_memcmp()
+            func = getattr(self, func)
 
-        if to_find['amfi_trust_cache']:
-            to_find['amfi_trust_cache'] = self.find_amfi_trust_cache()
-
-        if to_find['nor_signature']:
-            to_find['nor_signature'] = self.find_nor_signature()
-
-        if to_find['nor_llb_1']:
-            to_find['nor_llb_1'] = self.find_nor_llb_1()
-
-        if to_find['nor_llb_2']:
-            to_find['nor_llb_2'] = self.find_nor_llb_2()
-
-        if to_find['nor_llb_3']:
-            to_find['nor_llb_3'] = self.find_nor_llb_3()
-
-        if to_find['nor_llb_4']:
-            to_find['nor_llb_4'] = self.find_nor_llb_4()
-
-        if to_find['nor_llb_5']:
-            to_find['nor_llb_5'] = self.find_nor_llb_5()
+            to_find[patch] = func()
 
         return to_find
