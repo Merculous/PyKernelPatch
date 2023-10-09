@@ -29,7 +29,3 @@ So far, iOS 5.x is supported for iPhone 3GS. The patches themselves should be
 very close or exactly the same. Only real differences between devices is where
 everything gets loaded. 5.x have been tested and all of them restore without
 issues.
-
-iOS 6.0 and 6.1.3 are supported in 1.0.6. Version 1.0.5 should not be used
-as I forgot to add a few lines to have 5.x work again. Please use >=1.0.6 for
-all use cases.
