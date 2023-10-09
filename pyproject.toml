@@ -6,6 +6,7 @@ authors = ["Merculous <24739823+Merculous@users.noreply.github.com>"]
 license = "MIT"
 readme = "README.md"
 packages = [{include = "kernelpatch"}]
+repository = "https://github.com/Merculous/PyKernelPatch"
 
 
 [tool.poetry.dependencies]
