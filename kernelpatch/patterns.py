@@ -17,7 +17,7 @@ class Pattern(Instructions):
                 b'\x2e\xd1'
             )
 
-        elif self.version in ('6.0', '6.0.1'):
+        elif self.version in ('6.0', '6.0.1', '6.1', '6.1.2'):
             pattern = (
                 b'\x06\x28',
                 b'\x01\xd0'
@@ -26,7 +26,7 @@ class Pattern(Instructions):
         return pattern
 
     def form_tfp0(self):
-        if self.version in ('6.0', '6.0.1'):
+        if self.version in ('6.0', '6.0.1', '6.1', '6.1.2'):
             pattern = (
                 b'\x01\x91',
                 b'\x06\xd1',
@@ -111,7 +111,7 @@ class Pattern(Instructions):
                 b'\xe0\x47'
             )
 
-        elif self.version in ('6.0', '6.0.1'):
+        elif self.version in ('6.0', '6.0.1', '6.1', '6.1.2'):
             pattern = (
                 b'\x40\xf0\x0e\x81',
                 b'\x04\x98',
@@ -138,7 +138,7 @@ class Pattern(Instructions):
                 b'\x40\x46'
             )
 
-        elif self.version in ('6.0', '6.0.1'):
+        elif self.version in ('6.0', '6.0.1', '6.1', '6.1.2'):
             pattern = (
                 b'\x40\xf0\x04\x81',
                 b'\x31\x46',

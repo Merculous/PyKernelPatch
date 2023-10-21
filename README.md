@@ -25,7 +25,6 @@ mode that sn0wbreeze offers are being used in this project.
 
 # What versions and devices are supported
 
-So far, iOS 5.x is supported for iPhone 3GS. The patches themselves should be
-very close or exactly the same. Only real differences between devices is where
-everything gets loaded. 5.x have been tested and all of them restore without
-issues.
+iPhone 3GS:
+- 5.0, 5.0.1, 5.1, 5.1.1  
+- 6.0, 6.0.1, 6.1, 6.1.2
