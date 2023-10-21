@@ -27,4 +27,4 @@ mode that sn0wbreeze offers are being used in this project.
 
 iPhone 3GS:
 - 5.0, 5.0.1, 5.1, 5.1.1  
-- 6.0, 6.0.1, 6.1, 6.1.2
+- 6.0, 6.0.1, 6.1, 6.1.2, 6.1.3, 6.1.6

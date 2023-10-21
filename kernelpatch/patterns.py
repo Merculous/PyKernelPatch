@@ -17,7 +17,7 @@ class Pattern(Instructions):
                 b'\x2e\xd1'
             )
 
-        elif self.version in ('6.0', '6.0.1', '6.1', '6.1.2'):
+        elif self.version in ('6.0', '6.0.1', '6.1', '6.1.2', '6.1.3', '6.1.6'):
             pattern = (
                 b'\x06\x28',
                 b'\x01\xd0'
@@ -26,7 +26,7 @@ class Pattern(Instructions):
         return pattern
 
     def form_tfp0(self):
-        if self.version in ('6.0', '6.0.1', '6.1', '6.1.2'):
+        if self.version in ('6.0', '6.0.1', '6.1', '6.1.2', '6.1.3', '6.1.6'):
             pattern = (
                 b'\x01\x91',
                 b'\x06\xd1',
@@ -50,13 +50,45 @@ class Pattern(Instructions):
                 b'\x00\x2b'
             )
 
+        elif self.version in ('6.1.3', '6.1.6'):
+            pattern = (
+                b'\x12\x68',
+                b'\x00\x2a'
+            )
+
         return pattern
 
     def form_amfi_trust_cache(self):
-        pattern = (
-            b'\x4f\xf0\xff\x30',
-            b'\x2c\xe0'
-        )
+        if self.version == '4.3.3':
+            pattern = (
+                b'\x4f\xf0\xff\x30',
+                b'\x2c\xe0'
+            )
+
+        elif self.version in ('6.1.3', '6.1.6'):
+            pattern = (
+                b'\xce\x9a',
+                b'\x91\x42',
+                b'\x02\xbf'
+            )
+
+        return pattern
+
+    def form_sandbox_mac_label_get(self):
+        if self.version in ('6.1.3', '6.1.6'):
+            pattern = (
+                b'\x06\xf0\x7b\xfa',
+                b'\x04\x46'
+            )
+
+        return pattern
+
+    def form_sandbox_entitlement_container_required(self):
+        # The "e" in security changes to a "3"
+        if self.version in ('6.1.3', '6.1.6'):
+            pattern = (
+                b'com.apple.private.security.container-required',
+            )
 
         return pattern
 
@@ -111,7 +143,7 @@ class Pattern(Instructions):
                 b'\xe0\x47'
             )
 
-        elif self.version in ('6.0', '6.0.1', '6.1', '6.1.2'):
+        elif self.version in ('6.0', '6.0.1', '6.1', '6.1.2', '6.1.3', '6.1.6'):
             pattern = (
                 b'\x40\xf0\x0e\x81',
                 b'\x04\x98',
@@ -138,7 +170,7 @@ class Pattern(Instructions):
                 b'\x40\x46'
             )
 
-        elif self.version in ('6.0', '6.0.1', '6.1', '6.1.2'):
+        elif self.version in ('6.0', '6.0.1', '6.1', '6.1.2', '6.1.3', '6.1.6'):
             pattern = (
                 b'\x40\xf0\x04\x81',
                 b'\x31\x46',

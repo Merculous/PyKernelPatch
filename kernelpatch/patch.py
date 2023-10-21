@@ -26,6 +26,9 @@ class Patch(Find):
         elif self.version in ('5.0', '5.0.1', '5.1', '5.1.1'):
             patched = self.patchPattern(pattern, b'\x1b\x68', b'\x01\x23')
 
+        elif self.version in ('6.1.3', '6.1.6'):
+            patched = self.patchPattern(pattern, b'\x12\x68', b'\x01\x22')
+
         self.patchData(offset, pattern, patched)
 
     def patch_vm_map_enter(self, offset, pattern):
@@ -35,13 +38,13 @@ class Patch(Find):
         elif self.version in ('5.0', '5.0.1', '5.1', '5.1.1'):
             pass
 
-        elif self.version in ('6.0', '6.0.1'):
+        elif self.version in ('6.0', '6.0.1', '6.1', '6.1.2', '6.1.3', '6.1.6'):
             patched = self.patchPattern(pattern, b'\x06\x28', b'\xff\x28')
 
         self.patchData(offset, pattern, patched)
 
     def patch_tfp0(self, offset, pattern):
-        if self.version in ('6.0', '6.0.1'):
+        if self.version in ('6.0', '6.0.1', '6.1', '6.1.2', '6.1.3', '6.1.6'):
             patched = self.patchPattern(pattern, b'\x06\xd1', b'\x06\xe0')
 
         self.patchData(offset, pattern, patched)
@@ -62,6 +65,21 @@ class Patch(Find):
         elif self.version in ('5.0', '5.0.1', '5.1', '5.1.1'):
             pass
 
+        elif self.version in ('6.1.3', '6.1.6'):
+            patched = self.patchPattern(pattern, b'\x91\x42', b'\x11\x46')
+
+        self.patchData(offset, pattern, patched)
+
+    def patch_sandbox_mac_label_get(self, offset, pattern):
+        if self.version in ('6.1.3', '6.1.6'):
+            patched = self.patchPattern(pattern, b'\x06\xf0\x7b\xfa', b'\x00\x20\x00\x20')
+
+        self.patchData(offset, pattern, patched)
+
+    def patch_sandbox_entitlement_container_required(self, offset, pattern):
+        if self.version in ('6.1.3', '6.1.6'):
+            patched = self.patchPattern(pattern, b'security', b's3curity')
+
         self.patchData(offset, pattern, patched)
 
     def patch_nor_signature(self, offset, pattern):
@@ -80,7 +98,7 @@ class Patch(Find):
         elif self.version in ('5.0', '5.0.1', '5.1', '5.1.1'):
             patched = self.patchPattern(pattern, b'\xe0\x47', b'\x00\x20')
 
-        elif self.version in ('6.0', '6.0.1'):
+        elif self.version in ('6.0', '6.0.1', '6.1', '6.1.2', '6.1.3', '6.1.6'):
             patched = self.patchPattern(pattern, b'\x40\xf0\x0e\x81', b'\x00\x20\x00\x20')
 
         self.patchData(offset, pattern, patched)
@@ -92,7 +110,7 @@ class Patch(Find):
         elif self.version in ('5.0', '5.0.1', '5.1', '5.1.1'):
             patched = self.patchPattern(pattern, b'\xe0\x47', b'\x00\x20')
 
-        elif self.version in ('6.0', '6.0.1'):
+        elif self.version in ('6.0', '6.0.1', '6.1', '6.1.2', '6.1.3', '6.1.6'):
             patched = self.patchPattern(pattern, b'\x40\xf0\x04\x81', b'\x00\x20\x00\x20')
 
         self.patchData(offset, pattern, patched)

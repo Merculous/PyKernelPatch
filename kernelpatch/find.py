@@ -119,6 +119,14 @@ class Find(Pattern):
         patterns = self.form_amfi_trust_cache()
         return self.findOffset(patterns)
 
+    def find_sandbox_mac_label_get(self):
+        patterns = self.form_sandbox_mac_label_get()
+        return self.findOffset(patterns)
+
+    def find_sandbox_entitlement_container_required(self):
+        patterns = self.form_sandbox_entitlement_container_required()
+        return self.findOffset(patterns)
+
     def find_nor_signature(self):
         patterns = self.form_nor_signature()
         return self.findOffset(patterns)
@@ -164,6 +172,8 @@ class Find(Pattern):
             'tfp0': False,
             'amfi_memcmp': False,
             'amfi_trust_cache': False,
+            'sandbox_mac_label_get': False,
+            'sandbox_entitlement_container_required': False,
             'nor_signature': False,
             'nor_llb_1': False,
             'nor_llb_2': False,
@@ -202,6 +212,12 @@ class Find(Pattern):
                         to_find['nor_signature'] = True
 
                     elif base == '6.x':
+                        if version in ('6.1.3', '6.1.6'):
+                            to_find['debug_enabled'] = True
+                            to_find['amfi_trust_cache'] = True
+                            to_find['sandbox_mac_label_get'] = True
+                            to_find['sandbox_entitlement_container_required'] = True
+
                         to_find['vm_map_enter'] = True
                         to_find['tfp0'] = True
                         to_find['nor_llb_1'] = True
