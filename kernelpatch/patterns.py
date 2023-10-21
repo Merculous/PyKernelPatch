@@ -11,10 +11,27 @@ class Pattern(Instructions):
         return f'{instruction["mnemonic"]} {instruction["op_str"]}'
 
     def form_vm_map_enter(self):
-        pattern = (
-            b'\x18\xf0\x02\x0f',
-            b'\x2e\xd1'
-        )
+        if self.version == '4.3.3':
+            pattern = (
+                b'\x18\xf0\x02\x0f',
+                b'\x2e\xd1'
+            )
+
+        elif self.version in ('6.0', '6.0.1'):
+            pattern = (
+                b'\x06\x28',
+                b'\x01\xd0'
+            )
+
+        return pattern
+
+    def form_tfp0(self):
+        if self.version in ('6.0', '6.0.1'):
+            pattern = (
+                b'\x01\x91',
+                b'\x06\xd1',
+                b'\x02\xa8'
+            )
 
         return pattern
 
@@ -94,6 +111,13 @@ class Pattern(Instructions):
                 b'\xe0\x47'
             )
 
+        elif self.version in ('6.0', '6.0.1'):
+            pattern = (
+                b'\x40\xf0\x0e\x81',
+                b'\x04\x98',
+                b'\x00\xf0\x6c\xfa'
+            )
+
         return pattern
 
     def form_nor_llb_2(self):
@@ -112,6 +136,13 @@ class Pattern(Instructions):
                 b'\x18\xbf',
                 b'\x4f\xf0\x01\x08',
                 b'\x40\x46'
+            )
+
+        elif self.version in ('6.0', '6.0.1'):
+            pattern = (
+                b'\x40\xf0\x04\x81',
+                b'\x31\x46',
+                b'\x40\xf2\xe2\x24'
             )
 
         return pattern

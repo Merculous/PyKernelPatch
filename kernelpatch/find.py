@@ -104,6 +104,10 @@ class Find(Pattern):
         patterns = self.form_vm_map_enter()
         return self.findOffset(patterns)
 
+    def find_tfp0(self):
+        patterns = self.form_tfp0()
+        return self.findOffset(patterns)
+
     def find_amfi_memcmp(self):
         patterns = self.form_amfi_memcmp()
         return self.findOffset(patterns)
@@ -154,6 +158,7 @@ class Find(Pattern):
         to_find = {
             'debug_enabled': False,
             'vm_map_enter': False,
+            'tfp0': False,
             'amfi_memcmp': False,
             'amfi_trust_cache': False,
             'nor_signature': False,
@@ -192,6 +197,12 @@ class Find(Pattern):
                         to_find['nor_llb_4'] = True
                         to_find['nor_llb_5'] = True
                         to_find['nor_signature'] = True
+
+                    elif base == '6.x':
+                        to_find['vm_map_enter'] = True
+                        to_find['tfp0'] = True
+                        to_find['nor_llb_1'] = True
+                        to_find['nor_llb_2'] = True
 
         for patch in to_find:
             func_names = dir(self)

@@ -35,6 +35,15 @@ class Patch(Find):
         elif self.version in ('5.0', '5.0.1', '5.1', '5.1.1'):
             pass
 
+        elif self.version in ('6.0', '6.0.1'):
+            patched = self.patchPattern(pattern, b'\x06\x28', b'\xff\x28')
+
+        self.patchData(offset, pattern, patched)
+
+    def patch_tfp0(self, offset, pattern):
+        if self.version in ('6.0', '6.0.1'):
+            patched = self.patchPattern(pattern, b'\x06\xd1', b'\x06\xe0')
+
         self.patchData(offset, pattern, patched)
 
     def patch_amfi_memcmp(self, offset, pattern):
@@ -71,6 +80,9 @@ class Patch(Find):
         elif self.version in ('5.0', '5.0.1', '5.1', '5.1.1'):
             patched = self.patchPattern(pattern, b'\xe0\x47', b'\x00\x20')
 
+        elif self.version in ('6.0', '6.0.1'):
+            patched = self.patchPattern(pattern, b'\x40\xf0\x0e\x81', b'\x00\x20\x00\x20')
+
         self.patchData(offset, pattern, patched)
 
     def patch_nor_llb_2(self, offset, pattern):
@@ -79,6 +91,9 @@ class Patch(Find):
 
         elif self.version in ('5.0', '5.0.1', '5.1', '5.1.1'):
             patched = self.patchPattern(pattern, b'\xe0\x47', b'\x00\x20')
+
+        elif self.version in ('6.0', '6.0.1'):
+            patched = self.patchPattern(pattern, b'\x40\xf0\x04\x81', b'\x00\x20\x00\x20')
 
         self.patchData(offset, pattern, patched)
 
