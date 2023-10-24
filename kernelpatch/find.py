@@ -9,6 +9,9 @@ from binpatch.find import find
 class Find(Pattern):
     versions = {
         '4.x': {
+            '4.3': '1735.46~2',
+            '4.3.1': '1735.46~2',
+            '4.3.2': '1735.46~10',
             '4.3.3': '1735.46~10'
         },
         '5.x': {
@@ -97,6 +100,10 @@ class Find(Pattern):
         patterns = self.form_nor_llb_5()
         return self.findOffset(patterns)
 
+    def find_sandbox_profile(self):
+        patterns = self.form_sandbox_profile()
+        return self.findOffset(patterns)
+
     def getVersion(self):
         pattern = b'root:xnu'
         pattern_len = len(pattern)
@@ -125,7 +132,8 @@ class Find(Pattern):
             'nor_llb_2': False,
             'nor_llb_3': False,
             'nor_llb_4': False,
-            'nor_llb_5': False
+            'nor_llb_5': False,
+            'sandbox_profile': False
         }
 
         for base in self.versions:
@@ -136,6 +144,9 @@ class Find(Pattern):
                     self.version = version
 
                     if base == '4.x':
+                        if self.version in ('4.3', '4.3.1'):
+                            to_find['sandbox_profile'] = True
+
                         to_find['debug_enabled'] = True
                         to_find['vm_map_enter'] = True
                         to_find['amfi_memcmp'] = True

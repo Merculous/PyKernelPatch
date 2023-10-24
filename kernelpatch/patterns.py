@@ -11,7 +11,7 @@ class Pattern(Instructions):
         return f'{instruction["mnemonic"]} {instruction["op_str"]}'
 
     def form_vm_map_enter(self):
-        if self.version == '4.3.3':
+        if self.version in ('4.3', '4.3.1', '4.3.2', '4.3.3'):
             pattern = (
                 b'\x18\xf0\x02\x0f',
                 b'\x2e\xd1'
@@ -36,7 +36,7 @@ class Pattern(Instructions):
         return pattern
 
     def form_debug_enabled(self):
-        if self.version == '4.3.3':
+        if self.version in ('4.3', '4.3.1', '4.3.2', '4.3.3'):
             pattern = (
                 b'\x00\x00\x00\x00',  # This is the value
                 b'\x01\x00\x00\x00',
@@ -59,7 +59,7 @@ class Pattern(Instructions):
         return pattern
 
     def form_amfi_trust_cache(self):
-        if self.version == '4.3.3':
+        if self.version in ('4.3', '4.3.1', '4.3.2', '4.3.3'):
             pattern = (
                 b'\x4f\xf0\xff\x30',
                 b'\x2c\xe0'
@@ -93,7 +93,7 @@ class Pattern(Instructions):
         return pattern
 
     def form_amfi_memcmp(self):
-        if self.version == '4.3.3':
+        if self.version in ('4.3', '4.3.1', '4.3.2', '4.3.3'):
             pattern = (
                 b'\xb4\x42',
                 b'\xea\xd1',
@@ -109,7 +109,7 @@ class Pattern(Instructions):
         return pattern
 
     def form_nor_signature(self):
-        if self.version == '4.3.3':
+        if self.version in ('4.3', '4.3.1', '4.3.2', '4.3.3'):
             pattern = (
                 b'\xff\xf7\x25\xff',
                 b'\xf8\xb1'
@@ -126,7 +126,7 @@ class Pattern(Instructions):
         return pattern
 
     def form_nor_llb_1(self):
-        if self.version == '4.3.3':
+        if self.version in ('4.3', '4.3.1', '4.3.2', '4.3.3'):
             pattern = (
                 b'\xff\xf7\x0c\xff',
                 b'\x00\x38'
@@ -153,7 +153,7 @@ class Pattern(Instructions):
         return pattern
 
     def form_nor_llb_2(self):
-        if self.version == '4.3.3':
+        if self.version in ('4.3', '4.3.1', '4.3.2', '4.3.3'):
             pattern = (
                 b'\x02\x21',
                 b'\x7c\x4b',
@@ -180,7 +180,7 @@ class Pattern(Instructions):
         return pattern
 
     def form_nor_llb_3(self):
-        if self.version == '4.3.3':
+        if self.version in ('4.3', '4.3.1', '4.3.2', '4.3.3'):
             pattern = (
                 b'\xff\xf7\xab\xfd',
                 b'\x04\x46',
@@ -197,7 +197,7 @@ class Pattern(Instructions):
         return pattern
 
     def form_nor_llb_4(self):
-        if self.version == '4.3.3':
+        if self.version in ('4.3', '4.3.1', '4.3.2', '4.3.3'):
             pattern = (
                 b'\xff\xf7\x50\xfc',
                 b'\x00\xb3'
@@ -214,7 +214,7 @@ class Pattern(Instructions):
         return pattern
 
     def form_nor_llb_5(self):
-        if self.version == '4.3.3':
+        if self.version in ('4.3', '4.3.1', '4.3.2', '4.3.3'):
             pattern = (
                 b'\x4f\xf0\xff\x30',
                 b'\x2d\xe0'
@@ -225,6 +225,16 @@ class Pattern(Instructions):
                 b'\x02\x99',
                 b'\xb0\x47',
                 b'\x00\x28'
+            )
+
+        return pattern
+
+    def form_sandbox_profile(self):
+        if self.version in ('4.3', '4.3.1'):
+            pattern = (
+                b'\x1b\x68',
+                b'\x13\xf0\x04\x0f',
+                b'\x04\xd0'
             )
 
         return pattern
