@@ -14,41 +14,51 @@ def writeJSONFile(path, data):
         json.dump(data, f, indent=2)
 
 
+def addSpacesEveryN(data, n):
+    new = ''
+
+    for i in range(0, len(data), n):
+        new += data[i:i+n] + ' '
+
+    # Remove trailing spaces (at the end)
+
+    new = new.strip()
+
+    # Check that our new string is equal to the original
+    # stripped of spaces
+
+    stripped = new.replace(' ', '')
+
+    if stripped == data:
+        return new
+    else:
+        return False
+
+
 def clean(data):
     patches = data['patches']
 
-    cleaned = []
+    patch_info = {}
 
     for patch in patches:
-        new = {
-            'pattern': None,
-            'patched': None,
-            'original': None,
-            'index': None,
-            'offset': None
-        }
-
         pattern = patch['patternBytes'].replace(' ', '')
+
+        index = int(patch['patchOffset']) * 2
 
         patched = patch['patchBytes'].replace(' ', '')
 
         patched_len = len(patched)
 
-        index = int(patch['patchOffset']) * 2
+        offset = f'0x{patch["comment"].split()[-1]}'
 
-        original = pattern[index:index+patched_len]
+        patch_info[offset] = {
+            'pattern': addSpacesEveryN(pattern, 2),
+            'original': addSpacesEveryN(pattern[index:index+patched_len], 2),
+            'patched': addSpacesEveryN(patched, 2),
+            'index': index // 2
+        }
 
-        offset = patch['comment'].split()[-1]
-
-        new['pattern'] = pattern
-        new['patched'] = patched
-        new['original'] = original
-        new['index'] = index
-        new['offset'] = offset
-
-        cleaned.append(new)
-
-    return cleaned
+    return patch_info
 
 
 def main(args):
