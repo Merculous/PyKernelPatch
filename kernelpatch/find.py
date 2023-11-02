@@ -9,6 +9,11 @@ from binpatch.find import find
 class Find(Pattern):
     versions = {
         '4.x': {
+            '4.0': '1504.50.73~2',
+            '4.0.1': '1504.50.73~2',
+            '4.0.2': '1504.50.80~1',
+            '4.1': '1504.55.33~10',
+            '4.2.1': '1504.58.28~3',
             '4.3': '1735.46~2',
             '4.3.1': '1735.46~2',
             '4.3.2': '1735.46~10',
@@ -104,6 +109,10 @@ class Find(Pattern):
         patterns = self.form_sandbox_profile()
         return self.findOffset(patterns)
 
+    def find_seatbelt_profile(self):
+        patterns = self.form_seatbelt_profile()
+        return self.findOffset(patterns)
+
     def getVersion(self):
         pattern = b'root:xnu'
         pattern_len = len(pattern)
@@ -133,7 +142,8 @@ class Find(Pattern):
             'nor_llb_3': False,
             'nor_llb_4': False,
             'nor_llb_5': False,
-            'sandbox_profile': False
+            'sandbox_profile': False,
+            'seatbelt_profile': False
         }
 
         for base in self.versions:
@@ -147,8 +157,13 @@ class Find(Pattern):
                         if self.version in ('4.3', '4.3.1'):
                             to_find['sandbox_profile'] = True
 
+                        if self.version in ('4.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
+                            to_find['vm_map_enter'] = True
+
+                        if self.version == '4.0':
+                            to_find['seatbelt_profile'] = True
+
                         to_find['debug_enabled'] = True
-                        to_find['vm_map_enter'] = True
                         to_find['amfi_memcmp'] = True
                         to_find['amfi_trust_cache'] = True
                         to_find['nor_signature'] = True
@@ -179,6 +194,11 @@ class Find(Pattern):
                         to_find['tfp0'] = True
                         to_find['nor_llb_1'] = True
                         to_find['nor_llb_2'] = True
+
+                # Make sure we are only patching once. Some versions have the same
+                # kernel version string.
+
+                break
 
         for patch in to_find:
             func_names = dir(self)
