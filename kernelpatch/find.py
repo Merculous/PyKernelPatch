@@ -157,11 +157,10 @@ class Find(Pattern):
                     self.version = version
 
                     if base == '3.x':
-                        # 2 and 3 probably are needed, except
-                        # 3.1.3 don't have "cmp" instructions...
-
                         to_find['nor_signature'] = True
                         to_find['nor_llb_1'] = True
+                        to_find['nor_llb_2'] = True  # UNSURE
+                        to_find['nor_llb_3'] = True  # UNSURE
                         to_find['nor_llb_4'] = True
                         to_find['nor_llb_5'] = True
 

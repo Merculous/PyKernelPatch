@@ -117,7 +117,10 @@ class Patch(Find):
         self.patchData(offset, pattern, patched)
 
     def patch_nor_llb_2(self, offset, pattern):
-        if self.version in ('4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
+        if self.version in ('3.1.3'):
+            patched = self.patchPattern(pattern, b'\x28\xb9', b'\x00\x20')
+
+        elif self.version in ('4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
             patched = self.patchPattern(pattern, b'\x00\x28', b'\x00\x20')
 
         elif self.version in ('5.0', '5.0.1', '5.1', '5.1.1'):
@@ -130,7 +133,10 @@ class Patch(Find):
         self.patchData(offset, pattern, patched)
 
     def patch_nor_llb_3(self, offset, pattern):
-        if self.version in ('4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
+        if self.version in ('3.1.3'):
+            patched = self.patchPattern(pattern, b'\x08\xb9', b'\x00\x20')
+
+        elif self.version in ('4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
             patched = self.patchPattern(pattern, b'\x00\x28', b'\x00\x20')
 
         elif self.version in ('5.0', '5.0.1', '5.1', '5.1.1'):
