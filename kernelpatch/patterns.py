@@ -122,7 +122,13 @@ class Pattern(Instructions):
         return pattern
 
     def form_nor_signature(self):
-        if self.version in ('4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
+        if self.version in ('3.1.3'):
+            pattern = (
+                b'\xff\xf7\x29\xff',
+                b'\xf8\xb1'
+            )
+
+        elif self.version in ('4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
             pattern = (
                 b'\xff\xf7\x25\xff',
                 b'\xf8\xb1'
@@ -139,7 +145,13 @@ class Pattern(Instructions):
         return pattern
 
     def form_nor_llb_1(self):
-        if self.version in ('4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
+        if self.version in ('3.1.3'):
+            pattern = (
+                b'\xff\xf7\x10\xff',
+                b'\x00\x38'
+            )
+
+        elif self.version in ('4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
             pattern = (
                 b'\xff\xf7\x0c\xff',
                 b'\x00\x38'
@@ -210,7 +222,13 @@ class Pattern(Instructions):
         return pattern
 
     def form_nor_llb_4(self):
-        if self.version in ('4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
+        if self.version in ('3.1.3'):
+            pattern = (
+                b'\xff\xf7\x4e\xfe',
+                b'\x78\xb1'
+            )
+
+        elif self.version in ('4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
             pattern = (
                 b'\xff\xf7\x50\xfc',
                 b'\x00\xb3'
@@ -227,7 +245,7 @@ class Pattern(Instructions):
         return pattern
 
     def form_nor_llb_5(self):
-        if self.version in ('4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
+        if self.version in ('3.1.3', '4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
             pattern = (
                 b'\x4f\xf0\xff\x30',
                 b'\x2d\xe0'

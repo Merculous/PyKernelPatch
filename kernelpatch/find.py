@@ -8,6 +8,9 @@ from binpatch.find import find
 
 class Find(Pattern):
     versions = {
+        '3.x': {
+            '3.1.3': '1357.5.30~6'
+        },
         '4.x': {
             '4.0': '1504.50.73~2',
             '4.0.1': '1504.50.73~2',
@@ -153,7 +156,16 @@ class Find(Pattern):
                 if versions[version] == version_string:
                     self.version = version
 
-                    if base == '4.x':
+                    if base == '3.x':
+                        # 2 and 3 probably are needed, except
+                        # 3.1.3 don't have "cmp" instructions...
+
+                        to_find['nor_signature'] = True
+                        to_find['nor_llb_1'] = True
+                        to_find['nor_llb_4'] = True
+                        to_find['nor_llb_5'] = True
+
+                    elif base == '4.x':
                         if self.version in ('4.3', '4.3.1'):
                             to_find['sandbox_profile'] = True
 
