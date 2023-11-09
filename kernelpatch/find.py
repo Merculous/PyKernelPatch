@@ -149,67 +149,71 @@ class Find(Pattern):
             'seatbelt_profile': False
         }
 
-        for base in self.versions:
-            versions = self.versions[base]
+        try:
+            for base in self.versions:
+                versions = self.versions[base]
 
-            for version in versions:
-                if versions[version] == version_string:
-                    self.version = version
+                for version in versions:
+                    if versions[version] == version_string:
+                        self.version = version
 
-                    if base == '3.x':
-                        to_find['nor_signature'] = True
-                        to_find['nor_llb_1'] = True
-                        to_find['nor_llb_2'] = True  # UNSURE
-                        to_find['nor_llb_3'] = True  # UNSURE
-                        to_find['nor_llb_4'] = True
-                        to_find['nor_llb_5'] = True
+                        if base == '3.x':
+                            to_find['nor_signature'] = True
+                            to_find['nor_llb_1'] = True
+                            to_find['nor_llb_2'] = True  # UNSURE
+                            to_find['nor_llb_3'] = True  # UNSURE
+                            to_find['nor_llb_4'] = True
+                            to_find['nor_llb_5'] = True
 
-                    elif base == '4.x':
-                        if self.version in ('4.3', '4.3.1'):
-                            to_find['sandbox_profile'] = True
+                        elif base == '4.x':
+                            if self.version in ('4.3', '4.3.1'):
+                                to_find['sandbox_profile'] = True
 
-                        if self.version in ('4.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
-                            to_find['vm_map_enter'] = True
+                            if self.version in ('4.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
+                                to_find['vm_map_enter'] = True
 
-                        if self.version == '4.0':
-                            to_find['seatbelt_profile'] = True
+                            if self.version == '4.0':
+                                to_find['seatbelt_profile'] = True
 
-                        to_find['debug_enabled'] = True
-                        to_find['amfi_memcmp'] = True
-                        to_find['amfi_trust_cache'] = True
-                        to_find['nor_signature'] = True
-                        to_find['nor_llb_1'] = True
-                        to_find['nor_llb_2'] = True
-                        to_find['nor_llb_3'] = True
-                        to_find['nor_llb_4'] = True
-                        to_find['nor_llb_5'] = True
-
-                    elif base == '5.x':
-                        to_find['debug_enabled'] = True,
-                        to_find['amfi_memcmp'] = True
-                        to_find['nor_llb_1'] = True
-                        to_find['nor_llb_2'] = True
-                        to_find['nor_llb_3'] = True
-                        to_find['nor_llb_4'] = True
-                        to_find['nor_llb_5'] = True
-                        to_find['nor_signature'] = True
-
-                    elif base == '6.x':
-                        if version in ('6.1.3', '6.1.6'):
                             to_find['debug_enabled'] = True
+                            to_find['amfi_memcmp'] = True
                             to_find['amfi_trust_cache'] = True
-                            to_find['sandbox_mac_label_get'] = True
-                            to_find['sandbox_entitlement_container_required'] = True
+                            to_find['nor_signature'] = True
+                            to_find['nor_llb_1'] = True
+                            to_find['nor_llb_2'] = True
+                            to_find['nor_llb_3'] = True
+                            to_find['nor_llb_4'] = True
+                            to_find['nor_llb_5'] = True
 
-                        to_find['vm_map_enter'] = True
-                        to_find['tfp0'] = True
-                        to_find['nor_llb_1'] = True
-                        to_find['nor_llb_2'] = True
+                        elif base == '5.x':
+                            to_find['debug_enabled'] = True,
+                            to_find['amfi_memcmp'] = True
+                            to_find['nor_llb_1'] = True
+                            to_find['nor_llb_2'] = True
+                            to_find['nor_llb_3'] = True
+                            to_find['nor_llb_4'] = True
+                            to_find['nor_llb_5'] = True
+                            to_find['nor_signature'] = True
 
-                # Make sure we are only patching once. Some versions have the same
-                # kernel version string.
+                        elif base == '6.x':
+                            if version in ('6.1.3', '6.1.6'):
+                                to_find['debug_enabled'] = True
+                                to_find['amfi_trust_cache'] = True
+                                to_find['sandbox_mac_label_get'] = True
+                                to_find['sandbox_entitlement_container_required'] = True
 
-                break
+                            to_find['vm_map_enter'] = True
+                            to_find['tfp0'] = True
+                            to_find['nor_llb_1'] = True
+                            to_find['nor_llb_2'] = True
+
+                        raise StopIteration
+
+        # Make sure we are only patching once. Some versions have the same
+        # kernel version string.
+
+        except StopIteration:
+            pass
 
         for patch in to_find:
             func_names = dir(self)
