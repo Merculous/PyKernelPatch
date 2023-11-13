@@ -178,11 +178,13 @@ class Pattern(Instructions):
         return pattern
 
     def form_nor_llb_2(self):
+        # SHSH
+
         if self.version in ('3.1.3'):
             pattern = (
-                b'\x26\x4b',
-                b'\x98\x47',
-                b'\x28\xb9'
+                b'\x6a\x4a',
+                b'\x90\x47',
+                b'\x00\x28'
             )
 
         elif self.version in ('4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
@@ -212,10 +214,14 @@ class Pattern(Instructions):
         return pattern
 
     def form_nor_llb_3(self):
+        # DATA
+
         if self.version in ('3.1.3'):
             pattern = (
-                b'\xff\xf7\x07\xff',
-                b'\x08\xb9'
+                b'\x02\xab',
+                b'\xa0\x47',
+                b'\x04\x46',
+                b'\x00\x28'
             )
 
         elif self.version in ('4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
