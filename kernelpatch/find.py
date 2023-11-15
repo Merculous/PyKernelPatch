@@ -158,10 +158,13 @@ class Find(Pattern):
                         self.version = version
 
                         if base == '3.x':
+                            to_find['vm_map_enter'] = True
+                            to_find['debug_enabled'] = True
+                            to_find['amfi_memcmp'] = True
                             to_find['nor_signature'] = True
                             to_find['nor_llb_1'] = True
-                            to_find['nor_llb_2'] = True  # UNSURE
-                            to_find['nor_llb_3'] = True  # UNSURE
+                            to_find['nor_llb_2'] = True
+                            to_find['nor_llb_3'] = True
                             to_find['nor_llb_4'] = True
                             to_find['nor_llb_5'] = True
 

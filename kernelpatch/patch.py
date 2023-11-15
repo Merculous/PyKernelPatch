@@ -20,7 +20,7 @@ class Patch(Find):
         return pattern
 
     def patch_debug_enabled(self, offset, pattern):
-        if self.version in ('4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
+        if self.version in ('3.1.3', '4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
             patched = self.patchPattern(
                 pattern, b'\x00\x00\x00\x00\x01', b'\x01\x00\x00\x00\x01')
 
@@ -33,7 +33,11 @@ class Patch(Find):
         self.patchData(offset, pattern, patched)
 
     def patch_vm_map_enter(self, offset, pattern):
-        if self.version in ('4.1'):
+        if self.version in ('3.1.3'):
+            patched = self.patchPattern(
+                pattern, b'\x40\xf0\x36\x80', b'\x8b\x46\x8b\x46')
+
+        elif self.version in ('4.1'):
             patched = self.patchPattern(pattern, b'\x30\xd1', b'\x00\x20')
 
         elif self.version in ('4.3', '4.3.1', '4.3.2', '4.3.3'):
@@ -51,7 +55,7 @@ class Patch(Find):
         self.patchData(offset, pattern, patched)
 
     def patch_amfi_memcmp(self, offset, pattern):
-        if self.version in ('4.0', '4.0.1', '4.0.2', '4.1', '4.2.1'):
+        if self.version in ('3.1.3', '4.0', '4.0.1', '4.0.2', '4.1', '4.2.1'):
             patched = self.patchPattern(pattern, b'\x00\x24', b'\x01\x24')
 
         elif self.version in ('4.3', '4.3.1', '4.3.2', '4.3.3'):
@@ -117,7 +121,10 @@ class Patch(Find):
         self.patchData(offset, pattern, patched)
 
     def patch_nor_llb_2(self, offset, pattern):
-        if self.version in ('3.1.3', '4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
+        if self.version in ('3.1.3'):
+            patched = self.patchPattern(pattern, b'\x98\x47', b'\x00\x20')
+
+        elif self.version in ('4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
             patched = self.patchPattern(pattern, b'\x00\x28', b'\x00\x20')
 
         elif self.version in ('5.0', '5.0.1', '5.1', '5.1.1'):
@@ -130,7 +137,15 @@ class Patch(Find):
         self.patchData(offset, pattern, patched)
 
     def patch_nor_llb_3(self, offset, pattern):
-        if self.version in ('3.1.3', '4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
+        # NOTE 3.1.3 patches call to something with img3
+        # Now I'm not 100% this is needed since I could just
+        # patch the CMP, but I will have to test that...
+
+        if self.version in ('3.1.3'):
+            patched = self.patchPattern(
+                pattern, b'\xff\xf7\xd1\xfd', b'\x00\x20\x00\x20')
+
+        elif self.version in ('4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
             patched = self.patchPattern(pattern, b'\x00\x28', b'\x00\x20')
 
         elif self.version in ('5.0', '5.0.1', '5.1', '5.1.1'):
@@ -141,7 +156,7 @@ class Patch(Find):
     def patch_nor_llb_4(self, offset, pattern):
         if self.version in ('3.1.3'):
             patched = self.patchPattern(
-                pattern, b'\xff\xf7\x4e\xfe', b'\x01\x20\x01\x20')
+                pattern, b'\xff\xf7\xae\xfc', b'\x01\x20\x01\x20')
 
         elif self.version in ('4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
             patched = self.patchPattern(

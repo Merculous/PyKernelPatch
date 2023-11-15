@@ -11,7 +11,13 @@ class Pattern(Instructions):
         return f'{instruction["mnemonic"]} {instruction["op_str"]}'
 
     def form_vm_map_enter(self):
-        if self.version in ('4.0', '4.0.1', '4.0.2', '4.1'):
+        if self.version in ('3.1.3'):
+            pattern = (
+                b'\x40\xf0\x36\x80',
+                b'\x63\x08'
+            )
+
+        elif self.version in ('4.0', '4.0.1', '4.0.2', '4.1'):
             pattern = (
                 b'\x16\xf0\x02\x0f',
                 b'\x30\xd1'
@@ -42,7 +48,9 @@ class Pattern(Instructions):
         return pattern
 
     def form_debug_enabled(self):
-        if self.version in ('4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
+        # NOTE This is actually _cs_enforcement_disable
+
+        if self.version in ('3.1.3', '4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
             pattern = (
                 b'\x00\x00\x00\x00',  # This is the value
                 b'\x01\x00\x00\x00',
@@ -99,7 +107,7 @@ class Pattern(Instructions):
         return pattern
 
     def form_amfi_memcmp(self):
-        if self.version in ('4.0', '4.0.1', '4.0.2', '4.1', '4.2.1'):
+        if self.version in ('3.1.3', '4.0', '4.0.1', '4.0.2', '4.1', '4.2.1'):
             pattern = (
                 b'\x00\xb1',
                 b'\x00\x24',
@@ -182,8 +190,8 @@ class Pattern(Instructions):
 
         if self.version in ('3.1.3'):
             pattern = (
-                b'\x6a\x4a',
-                b'\x90\x47',
+                b'\x68\x4b',
+                b'\x98\x47',
                 b'\x00\x28'
             )
 
@@ -214,14 +222,12 @@ class Pattern(Instructions):
         return pattern
 
     def form_nor_llb_3(self):
-        # DATA
+        # CERT
 
         if self.version in ('3.1.3'):
             pattern = (
-                b'\x02\xab',
-                b'\xa0\x47',
-                b'\x04\x46',
-                b'\x00\x28'
+                b'\xff\xf7\xd1\xfd',
+                b'\x04\x46'
             )
 
         elif self.version in ('4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
@@ -243,8 +249,8 @@ class Pattern(Instructions):
     def form_nor_llb_4(self):
         if self.version in ('3.1.3'):
             pattern = (
-                b'\xff\xf7\x4e\xfe',
-                b'\x78\xb1'
+                b'\xff\xf7\xae\xfc',
+                b'\x00\xb3'
             )
 
         elif self.version in ('4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
