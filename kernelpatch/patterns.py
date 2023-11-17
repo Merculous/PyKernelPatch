@@ -11,7 +11,7 @@ class Pattern(Instructions):
         return f'{instruction["mnemonic"]} {instruction["op_str"]}'
 
     def form_vm_map_enter(self):
-        if self.version in ('3.1.3'):
+        if self.version in ('3.0', '3.0.1', '3.1', '3.1.2', '3.1.3'):
             pattern = (
                 b'\x40\xf0\x36\x80',
                 b'\x63\x08'
@@ -50,7 +50,7 @@ class Pattern(Instructions):
     def form_debug_enabled(self):
         # NOTE This is actually _cs_enforcement_disable
 
-        if self.version in ('3.1.3', '4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
+        if self.version in ('3.0', '3.0.1', '3.1', '3.1.2', '3.1.3', '4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
             pattern = (
                 b'\x00\x00\x00\x00',  # This is the value
                 b'\x01\x00\x00\x00',
@@ -107,7 +107,7 @@ class Pattern(Instructions):
         return pattern
 
     def form_amfi_memcmp(self):
-        if self.version in ('3.1.3', '4.0', '4.0.1', '4.0.2', '4.1', '4.2.1'):
+        if self.version in ('3.0', '3.0.1', '3.1', '3.1.2', '3.1.3', '4.0', '4.0.1', '4.0.2', '4.1', '4.2.1'):
             pattern = (
                 b'\x00\xb1',
                 b'\x00\x24',
@@ -130,7 +130,7 @@ class Pattern(Instructions):
         return pattern
 
     def form_nor_signature(self):
-        if self.version in ('3.1.3'):
+        if self.version in ('3.0', '3.0.1', '3.1', '3.1.2', '3.1.3'):
             pattern = (
                 b'\xff\xf7\x29\xff',
                 b'\xf8\xb1'
@@ -153,7 +153,7 @@ class Pattern(Instructions):
         return pattern
 
     def form_nor_llb_1(self):
-        if self.version in ('3.1.3'):
+        if self.version in ('3.0', '3.0.1', '3.1', '3.1.2', '3.1.3'):
             pattern = (
                 b'\xff\xf7\x10\xff',
                 b'\x00\x38'
@@ -188,7 +188,14 @@ class Pattern(Instructions):
     def form_nor_llb_2(self):
         # SHSH
 
-        if self.version in ('3.1.3'):
+        if self.version in ('3.0', '3.0.1'):
+            pattern = (
+                b'\x67\x4b',
+                b'\x98\x47',
+                b'\x00\x28'
+            )
+
+        elif self.version in ('3.1', '3.1.2', '3.1.3'):
             pattern = (
                 b'\x68\x4b',
                 b'\x98\x47',
@@ -224,7 +231,13 @@ class Pattern(Instructions):
     def form_nor_llb_3(self):
         # CERT
 
-        if self.version in ('3.1.3'):
+        if self.version in ('3.0', '3.0.1'):
+            pattern = (
+                b'\xff\xf7\xd9\xfd',
+                b'\x04\x46'
+            )
+
+        elif self.version in ('3.1', '3.1.2', '3.1.3'):
             pattern = (
                 b'\xff\xf7\xd1\xfd',
                 b'\x04\x46'
@@ -247,7 +260,13 @@ class Pattern(Instructions):
         return pattern
 
     def form_nor_llb_4(self):
-        if self.version in ('3.1.3'):
+        if self.version in ('3.0', '3.0.1'):
+            pattern = (
+                b'\xff\xf7\xbe\xfc',
+                b'\x00\xb3'
+            )
+
+        elif self.version in ('3.1', '3.1.2', '3.1.3'):
             pattern = (
                 b'\xff\xf7\xae\xfc',
                 b'\x00\xb3'
@@ -270,7 +289,7 @@ class Pattern(Instructions):
         return pattern
 
     def form_nor_llb_5(self):
-        if self.version in ('3.1.3', '4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
+        if self.version in ('3.0', '3.0.1', '3.1', '3.1.2', '3.1.3', '4.0', '4.0.1', '4.0.2', '4.1', '4.2.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
             pattern = (
                 b'\x4f\xf0\xff\x30',
                 b'\x2d\xe0'
