@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pykernelpatch"
-version = "1.1.4"
+version = "1.1.5"
 description = "iOS kernelcache patcher"
 authors = ["Merculous <24739823+Merculous@users.noreply.github.com>"]
 license = "MIT"
@@ -10,9 +10,9 @@ repository = "https://github.com/Merculous/PyKernelPatch"
 
 
 [tool.poetry.dependencies]
-python = "^3.11"
-pybinpatch = "^1.0.1"
-capstone = "^5.0.1"
+python = "^3.10"
+numpy = "^1.26.3"
+eyepatch = {git = "https://github.com/Merculous/eyepatch.git", rev = "kernel32-xref"}
 
 
 [build-system]
