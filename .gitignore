@@ -5,3 +5,6 @@ kernelcache*
 __pycache__
 *.pyc
 dist
+*.bin
+*.dat
+*.txt

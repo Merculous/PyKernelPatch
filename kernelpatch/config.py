@@ -1,5 +1,0 @@
-
-from capstone import CS_ARCH_ARM, CS_MODE_THUMB
-
-ARCH = CS_ARCH_ARM
-MODE = CS_MODE_THUMB

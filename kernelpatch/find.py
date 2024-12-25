@@ -1,237 +1,174 @@
 
-from .patterns import Pattern
-from .utils import hexStringToHexInt, joinPatterns
+from armfind.find import (
+    find_next_LDR_Literal,
+    find_next_BL,
+    find_next_CMP_with_value,
+    find_next_MOV_W_with_value,
+    find_next_MOVW_with_value
+)
+from binpatch.types import Buffer
 
-from binpatch.file import readBinaryFromPath
-from binpatch.find import find
+
+class AppleImage3NORAccess:
+    def __init__(self, data: Buffer, log: bool = True) -> None:
+        self.data = data
+        self.log = log
+
+    def find_hwdinfo_prod(self) -> int:
+        if self.log:
+            print('find_hwdinfo_prod()')
+
+        ldrPROD = find_next_LDR_Literal(self.data, 0, 0, b'PROD'[::-1])
+
+        if ldrPROD is None:
+            raise Exception('Failed to find LDR Rx, PROD!')
+
+        ldrPROD, ldrPRODOffset = ldrPROD
+
+        if self.log:
+            print(f'Found LDR Rx, PROD at: {ldrPRODOffset:x}')
+
+        bl = find_next_BL(self.data, ldrPRODOffset, 0)
+
+        if bl is None:
+            raise Exception('Failed to find next Bl!')
+
+        bl, blOffset = bl
+
+        if self.log:
+            print(f'Found BL at: {blOffset:x}')
+
+        return blOffset
+
+    def find_hwdinfo_ecid(self) -> int:
+        if self.log:
+            print('find_hwdinfo_ecid()')
+
+        ldrECID = find_next_LDR_Literal(self.data, 0, 0, b'ECID'[::-1])
+
+        if ldrECID is None:
+            raise Exception('Failed to find LDR Rx, ECID!')
+        
+        ldrECID, ldrECIDOffset = ldrECID
+
+        if self.log:
+            print(f'Found LDR Rx, ECID at: {ldrECIDOffset:x}')
+
+        bl = find_next_BL(self.data, ldrECIDOffset, 0)
+
+        if bl is None:
+            raise Exception('Failed to find next BL!')
+
+        bl, blOffset = bl
+
+        if self.log:
+            print(f'Found BL at: {blOffset:x}')
+
+        return blOffset
+
+    def find_image3_validate(self) -> int:
+        if self.log:
+            print('find_image3_validate()')
+
+        ldrSHSH = find_next_LDR_Literal(self.data, 0, 4, b'SHSH'[::-1])
+ 
+        if ldrSHSH is None:
+            raise Exception('Failed to find LDR Rx, SHSH!')
+        
+        ldrSHSH, ldrSHSHOffset = ldrSHSH
+
+        if self.log:
+            print(f'Found LDR Rx, SHSH at: {ldrSHSHOffset:x}')
+
+        cmp = find_next_CMP_with_value(self.data, ldrSHSHOffset, 1, 0)
+
+        if cmp is None:
+            raise Exception('Failed to find CMP, Rx #0!')
+
+        cmp, cmpOffset = cmp
+
+        if self.log:
+            print(f'Found CMP Rx, #0 at: {cmpOffset:x}')
+
+        return cmpOffset
 
 
-class Find(Pattern):
-    versions = {
-        '3.x': {
-            '3.0': '1357.2.89~4',
-            '3.0.1': '1357.2.89~4',
-            '3.1': '1357.5.30~2',
-            '3.1.2': '1357.5.30~3',
-            '3.1.3': '1357.5.30~6'
-        },
-        '4.x': {
-            '4.0': '1504.50.73~2',
-            '4.0.1': '1504.50.73~2',
-            '4.0.2': '1504.50.80~1',
-            '4.1': '1504.55.33~10',
-            '4.2.1': '1504.58.28~3',
-            '4.3': '1735.46~2',
-            '4.3.1': '1735.46~2',
-            '4.3.2': '1735.46~10',
-            '4.3.3': '1735.46~10'
-        },
-        '5.x': {
-            '5.0': '1878.4.43~2',
-            '5.0.1': '1878.4.46~1',
-            '5.1': '1878.11.8~1',
-            '5.1.1': '1878.11.10~1'
-        },
-        '6.x': {
-            '6.0': '2107.2.33~4',
-            '6.0.1': '2107.2.34~2',
-            '6.1': '2107.7.55~11',
-            '6.1.2': '2107.7.55~11',
-            '6.1.3': '2107.7.55.2.2~1',
-            '6.1.6': '2107.7.55.2.2~1'
-        }
-    }
+    def find_hwdinfo_func(self) -> int:
+        if self.log:
+            print('find_hwdinfo_func()')
 
-    def __init__(self, arch, mode, path):
-        super().__init__(arch, mode)
+        ldrLLB = find_next_LDR_Literal(self.data, 0, 3, b'illb'[::-1])
 
-        self.path = path
-        self.data = readBinaryFromPath(self.path)
+        if ldrLLB is None:
+            raise Exception('Failed to find LDR, Rx illb!')
+        
+        ldrLLB, ldrLLBOffset = ldrLLB
 
-    def findPattern(self, pattern):
-        return find(pattern, self.data)
+        if self.log:
+            print(f'Found LDR Rx, illb at: {ldrLLBOffset:x}')
 
-    def findOffset(self, patterns):
-        for pattern in patterns:
-            instruction = self.convertBytesToInstruction(pattern)
-            print(f'Looking for pattern: {instruction}')
+        cmp = find_next_CMP_with_value(self.data, ldrLLBOffset - 10, 0, 0)
 
-        pattern = joinPatterns(patterns)[0]
-        match = self.findPattern(pattern)
-        return (match, pattern)
+        if cmp is None:
+            raise Exception('Failed to find CMP Rx, #0!')
 
-    def find_debug_enabled(self):
-        patterns = self.form_debug_enabled()
-        return self.findOffset(patterns)
+        cmp, cmpOffset = cmp
 
-    def find_vm_map_enter(self):
-        patterns = self.form_vm_map_enter()
-        return self.findOffset(patterns)
+        if self.log:
+            print(f'Found CMP Rx, #0 at: {cmpOffset:x}')
 
-    def find_tfp0(self):
-        patterns = self.form_tfp0()
-        return self.findOffset(patterns)
+        return cmpOffset
 
-    def find_amfi_memcmp(self):
-        patterns = self.form_amfi_memcmp()
-        return self.findOffset(patterns)
 
-    def find_amfi_trust_cache(self):
-        patterns = self.form_amfi_trust_cache()
-        return self.findOffset(patterns)
+    def find_shsh_encrypt(self) -> int:
+        if self.log:
+            print('find_shsh_encrypt()')
 
-    def find_sandbox_mac_label_get(self):
-        patterns = self.form_sandbox_mac_label_get()
-        return self.findOffset(patterns)
+        movw = find_next_MOVW_with_value(self.data, 0, 1, 0x836)
 
-    def find_sandbox_entitlement_container_required(self):
-        patterns = self.form_sandbox_entitlement_container_required()
-        return self.findOffset(patterns)
+        if movw is None:
+            raise Exception('Failed to find MOVW Rx, #0x836')
 
-    def find_nor_signature(self):
-        patterns = self.form_nor_signature()
-        return self.findOffset(patterns)
+        movw, movwOffset = movw
 
-    def find_nor_llb_1(self):
-        patterns = self.form_nor_llb_1()
-        return self.findOffset(patterns)
+        if self.log:
+            print(f'Found MOVW Rx, #0x836 at: {movwOffset:x}')
 
-    def find_nor_llb_2(self):
-        patterns = self.form_nor_llb_2()
-        return self.findOffset(patterns)
+        bl = find_next_BL(self.data, movwOffset, 2)
 
-    def find_nor_llb_3(self):
-        patterns = self.form_nor_llb_3()
-        return self.findOffset(patterns)
+        if bl is None:
+            raise Exception('Failed to find next Bl!')
 
-    def find_nor_llb_4(self):
-        patterns = self.form_nor_llb_4()
-        return self.findOffset(patterns)
+        bl, blOffset = bl
 
-    def find_nor_llb_5(self):
-        patterns = self.form_nor_llb_5()
-        return self.findOffset(patterns)
+        if self.log:
+            print(f'Found BL at: {blOffset:x}')
 
-    def find_sandbox_profile(self):
-        patterns = self.form_sandbox_profile()
-        return self.findOffset(patterns)
+        return blOffset
 
-    def find_seatbelt_profile(self):
-        patterns = self.form_seatbelt_profile()
-        return self.findOffset(patterns)
 
-    def getVersion(self):
-        pattern = b'root:xnu'
-        pattern_len = len(pattern)
+    def find_pk_verify_SHA1(self) -> int:
+        if self.log:
+            print('find_pk_verify_SHA1()')
+        
+        movw = find_next_MOVW_with_value(self.data, 0, 2, 0x4BF)
 
-        offset = self.findPattern(pattern)
-        offset = hexStringToHexInt(offset)
+        if movw is None:
+            raise Exception('Failed to find MOVW Rx, #0x4BF')
+        
+        movw, movwOffset = movw
 
-        buffer = self.data[offset:offset+pattern_len+25]
+        if self.log:
+            print(f'Found MOVW Rx, #0x4BF at: {movwOffset:x}')
 
-        version = buffer.split(b'-')[1].split(b'/')[0].decode()
-        return version
+        mov_w = find_next_MOV_W_with_value(self.data, movwOffset, 0, 0x3FF)
 
-    def findAllOffsets(self):
-        version_string = self.getVersion()
+        if mov_w is None:
+            raise Exception('Failed to find MOV.W Rx, #0xFFFFFFFF')
 
-        to_find = {
-            'debug_enabled': False,
-            'vm_map_enter': False,
-            'tfp0': False,
-            'amfi_memcmp': False,
-            'amfi_trust_cache': False,
-            'sandbox_mac_label_get': False,
-            'sandbox_entitlement_container_required': False,
-            'nor_signature': False,
-            'nor_llb_1': False,
-            'nor_llb_2': False,
-            'nor_llb_3': False,
-            'nor_llb_4': False,
-            'nor_llb_5': False,
-            'sandbox_profile': False,
-            'seatbelt_profile': False
-        }
+        mov_w, mov_wOffset = mov_w
 
-        try:
-            for base in self.versions:
-                versions = self.versions[base]
+        if self.log:
+            print(f'Found MOV.W Rx, #0xFFFFFFFF at: {mov_wOffset:x}')
 
-                for version in versions:
-                    if versions[version] == version_string:
-                        self.version = version
-
-                        if base == '3.x':
-                            to_find['vm_map_enter'] = True
-                            to_find['debug_enabled'] = True
-                            to_find['amfi_memcmp'] = True
-                            to_find['nor_signature'] = True
-                            to_find['nor_llb_1'] = True
-                            to_find['nor_llb_2'] = True
-                            to_find['nor_llb_3'] = True
-                            to_find['nor_llb_4'] = True
-                            to_find['nor_llb_5'] = True
-
-                        elif base == '4.x':
-                            if self.version in ('4.3', '4.3.1'):
-                                to_find['sandbox_profile'] = True
-
-                            if self.version in ('4.1', '4.3', '4.3.1', '4.3.2', '4.3.3'):
-                                to_find['vm_map_enter'] = True
-
-                            if self.version == '4.0':
-                                to_find['seatbelt_profile'] = True
-
-                            to_find['debug_enabled'] = True
-                            to_find['amfi_memcmp'] = True
-                            to_find['amfi_trust_cache'] = True
-                            to_find['nor_signature'] = True
-                            to_find['nor_llb_1'] = True
-                            to_find['nor_llb_2'] = True
-                            to_find['nor_llb_3'] = True
-                            to_find['nor_llb_4'] = True
-                            to_find['nor_llb_5'] = True
-
-                        elif base == '5.x':
-                            to_find['debug_enabled'] = True,
-                            to_find['amfi_memcmp'] = True
-                            to_find['nor_llb_1'] = True
-                            to_find['nor_llb_2'] = True
-                            to_find['nor_llb_3'] = True
-                            to_find['nor_llb_4'] = True
-                            to_find['nor_llb_5'] = True
-                            to_find['nor_signature'] = True
-
-                        elif base == '6.x':
-                            if version in ('6.1.3', '6.1.6'):
-                                to_find['debug_enabled'] = True
-                                to_find['amfi_trust_cache'] = True
-                                to_find['sandbox_mac_label_get'] = True
-                                to_find['sandbox_entitlement_container_required'] = True
-
-                            to_find['vm_map_enter'] = True
-                            to_find['tfp0'] = True
-                            to_find['nor_llb_1'] = True
-                            to_find['nor_llb_2'] = True
-
-                        raise StopIteration
-
-        # Make sure we are only patching once. Some versions have the same
-        # kernel version string.
-
-        except StopIteration:
-            pass
-
-        for patch in to_find:
-            func_names = dir(self)
-
-            for func in func_names:
-                if func == f'find_{patch}':
-                    if to_find[patch]:
-                        print(f'[*] {patch}')
-
-                        func = getattr(self, func)
-
-                        to_find[patch] = func()
-
-        return to_find
+        return mov_wOffset
