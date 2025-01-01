@@ -8,11 +8,15 @@ from armfind.find import (
 )
 from binpatch.types import Buffer
 
-
-class AppleImage3NORAccess:
+class BaseClass:
     def __init__(self, data: Buffer, log: bool = True) -> None:
         self.data = data
         self.log = log
+
+
+class AppleImage3NORAccess(BaseClass):
+    def __init__(self, data: Buffer, log: bool = True) -> None:
+        super().__init__(data, log)
 
     def find_hwdinfo_prod(self) -> int:
         if self.log:

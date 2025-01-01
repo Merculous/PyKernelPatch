@@ -1,11 +1,10 @@
 
 from argparse import ArgumentParser
-from time import perf_counter
 
-from binpatch.io import readBytesFromPath
+from binpatch.io import readBytesFromPath, writeBytesToPath
 from binpatch.types import FilesystemPath
 
-from .find import AppleImage3NORAccess
+from .patch import NORPatcher
 
 
 def main() -> None:
@@ -21,19 +20,17 @@ def main() -> None:
 
     inData = readBytesFromPath(args.i[0])
 
-    startTime = perf_counter()
+    patcher = NORPatcher(inData)
+    patcher.patch_hwdinfo_prod()
+    patcher.patch_hwdinfo_ecid()
+    patcher.patch_image3_validate()
+    patcher.patch_hwdinfo_func()
+    patcher.patch_shsh_encrypt()
+    patcher.patch_pk_verify_sha1()
 
-    a = AppleImage3NORAccess(inData)
-    a.find_hwdinfo_prod()
-    a.find_hwdinfo_ecid()
-    a.find_image3_validate()
-    a.find_hwdinfo_func()
-    a.find_shsh_encrypt()
-    a.find_pk_verify_SHA1()
+    outData = patcher.data
 
-    endTime = perf_counter() - startTime
-
-    print(f'{endTime:.6f}')
+    writeBytesToPath(args.o[0], outData)
 
 
 if __name__ == '__main__':
