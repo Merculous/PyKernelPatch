@@ -117,7 +117,7 @@ class AppleImage3NORAccess3(BaseClass):
         ldrillb, ldrillbOffset = ldrillb
 
         if self.log:
-            print(f'Found LDR Rx, SHSH at {ldrillbOffset:x}')
+            print(f'Found LDR Rx, illb at {ldrillbOffset:x}')
 
         push = find_next_push(self.data, ldrillbOffset - 0x100, 0)
 
