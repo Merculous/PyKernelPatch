@@ -109,17 +109,17 @@ class AppleImage3NORAccess3(BaseClass):
         if self.log:
             print('find_llb_decrypt_personalized()')
 
-        ldrillb = find_next_LDR_Literal(self.data, 0, 2, b'illb'[::-1])
+        movw = find_next_MOVW_with_value(self.data, self.hwdinfo_from_image, 0, 0x836)
 
-        if ldrillb is None:
-            raise Exception('Failed to find LDR Rx, illb!')
+        if movw is None:
+            raise Exception('Failed to find MOVW Rx, #0x836!')
 
-        ldrillb, ldrillbOffset = ldrillb
+        movw, movwOffset = movw
 
         if self.log:
-            print(f'Found LDR Rx, illb at {ldrillbOffset:x}')
+            print(f'Found MOVW Rx, #0x836 at {movwOffset:x}')
 
-        push = find_next_push(self.data, ldrillbOffset - 0x100, 0)
+        push = find_next_push(self.data, movwOffset - 0x200, 0)
 
         if push is None:
             raise Exception('Failed to find PUSH!')
@@ -171,7 +171,17 @@ class AppleImage3NORAccess3(BaseClass):
         if self.log:
             print(f'Found LDR Rx, SHSH at {ldrSHSHOffset:x}')
 
-        cmp = find_next_CMP_with_value(self.data, ldrSHSHOffset, 2, 0)
+        bl = find_next_BL(self.data, ldrSHSHOffset, 0)
+
+        if bl is None:
+            raise Exception('Failed to find BL!')
+
+        bl, blOffset = bl
+
+        if self.log:
+            print(f'Found BL at {blOffset:x}')
+
+        cmp = find_next_CMP_with_value(self.data, blOffset, 0, 0)
 
         if cmp is None:
             raise Exception('Failed to find CMP Rx, #0!')
