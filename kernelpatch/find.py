@@ -109,17 +109,17 @@ class AppleImage3NORAccess3(BaseClass):
         if self.log:
             print('find_llb_decrypt_personalized()')
 
-        ldrSHSH = find_next_LDR_Literal(self.data, 0, 4, b'SHSH'[::-1])
+        ldrillb = find_next_LDR_Literal(self.data, 0, 2, b'illb'[::-1])
 
-        if ldrSHSH is None:
-            raise Exception('Failed to find LDR Rx, SHSH!')
+        if ldrillb is None:
+            raise Exception('Failed to find LDR Rx, illb!')
 
-        ldrSHSH, ldrSHSHOffset = ldrSHSH
+        ldrillb, ldrillbOffset = ldrillb
 
         if self.log:
-            print(f'Found LDR Rx, SHSH at {ldrSHSHOffset:x}')
+            print(f'Found LDR Rx, SHSH at {ldrillbOffset:x}')
 
-        push = find_next_push(self.data, ldrSHSHOffset - 0x100, 0)
+        push = find_next_push(self.data, ldrillbOffset - 0x100, 0)
 
         if push is None:
             raise Exception('Failed to find PUSH!')
