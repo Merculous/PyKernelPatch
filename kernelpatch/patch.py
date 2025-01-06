@@ -2,7 +2,7 @@
 from binpatch.types import Buffer
 from binpatch.utils import replaceBufferAtIndex
 
-from .find import AppleImage3NORAccess3
+from .find import AppleImage3NORAccess3, AppleImage3NORAccess4
 
 class NORPatcher3(AppleImage3NORAccess3):
     def __init__(self, data: Buffer, log: bool = True) -> None:
@@ -31,3 +31,7 @@ class NORPatcher3(AppleImage3NORAccess3):
     def patch_pk_verify_sha1(self) -> None:
         offset = self.find_pk_verify_sha1()
         self.data = replaceBufferAtIndex(self.data, b'\x00\x20\x00\x20', offset, 4)
+
+
+class NORPatcher4(NORPatcher3, AppleImage3NORAccess4):
+    pass

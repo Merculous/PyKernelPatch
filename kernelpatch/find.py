@@ -7,7 +7,8 @@ from armfind.find import (
     find_next_CMP_with_value,
     find_next_MOV_W_with_value,
     find_next_MOVW_with_value,
-    find_next_push
+    find_next_push,
+    find_next_LDR_W_with_value
 )
 from binpatch.types import Buffer
 from binpatch.utils import getBufferAtIndex
@@ -245,3 +246,60 @@ class AppleImage3NORAccess3(BaseClass):
             print(f'Found MOV.W Rx, #0xFFFFFFFF at {movw_wOffset:x}')
 
         return movw_wOffset
+
+
+class AppleImage3NORAccess4(AppleImage3NORAccess3):
+    def __init__(self, data: Buffer, log: bool = True) -> None:
+        super().__init__(data, log)
+
+    def find_hwdinfo_func(self) -> int:
+        if self.log:
+            print('find_hwdinfo_func()')
+
+        ldrPROD = find_next_LDR_W_with_value(self.data, 0, 0, b'PROD'[::-1])
+
+        if ldrPROD is None:
+            raise Exception('Failed to find LDR.W Rx, PROD!')
+        
+        ldrPROD, ldrPRODOffset = ldrPROD
+
+        if self.log:
+            print(f'Found LDR.W Rx, PROD at {ldrPRODOffset:x}')
+
+        push = find_next_push(self.data, ldrPRODOffset - 0x100, 0)
+
+        if push is None:
+            raise Exception('Failed to find PUSH!')
+
+        push, pushOffset = push
+
+        if self.log:
+            print(f'Found PUSH at {pushOffset:x}')
+
+        return pushOffset
+
+    def find_hwdinfo_prod(self) -> int:
+        if self.log:
+            print('find_hwdinfo_prod()')
+
+        ldrPROD = find_next_LDR_W_with_value(self.data, 0, 0, b'PROD'[::-1])
+
+        if ldrPROD is None:
+            raise Exception('Failed to find LDR.W Rx, PROD!')
+        
+        ldrPROD, ldrPRODOffset = ldrPROD
+
+        if self.log:
+            print(f'Found LDR.W Rx, PROD at {ldrPRODOffset:x}')
+
+        bl = find_next_BL(self.data, ldrPRODOffset, 0)
+
+        if bl is None:
+            raise Exception('Failed to find Bl!')
+        
+        bl, blOffset = bl
+
+        if self.log:
+            print(f'Found BL at {blOffset:x}')
+
+        return blOffset
