@@ -543,3 +543,7 @@ class AppleImage3NORAccess5(AppleImage3NORAccess4):
             print(f'Found MOV Rx, Rx at {movOffset:x}')
 
         return movOffset
+
+
+class AppleImage3NORAccess6(AppleImage3NORAccess5):
+    pass
