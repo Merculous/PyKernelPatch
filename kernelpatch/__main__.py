@@ -25,14 +25,14 @@ def main() -> None:
 
     start = perf_counter()
 
-    version = int(args.ios[0].split('.')[0])
+    version = int(args.ios[0].split('.')[0]) if '.' in args.ios[0] else int(args.ios[0])
 
     if version == 3:
-        patcher = NORPatcher3(inData)
+        patcher = NORPatcher3(inData) # 0.214050
     elif version == 4:
-        patcher = NORPatcher4(inData)
+        patcher = NORPatcher4(inData) # 0.469186
     elif version == 5:
-        patcher = NORPatcher5(inData)
+        patcher = NORPatcher5(inData) # 0.337591
     elif version == 6:
         patcher = NORPatcher6(inData)
     else:
