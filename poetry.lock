@@ -20,13 +20,13 @@ resolved_reference = "625c4ca743ad7dc01ffccc1be2b98c87d35b042b"
 
 [[package]]
 name = "pybinpatch"
-version = "1.0.6"
+version = "1.0.7"
 description = "Binary diff and patch lib"
 optional = false
 python-versions = "<4.0,>=3.11"
 files = [
-    {file = "pybinpatch-1.0.6-py3-none-any.whl", hash = "sha256:5f38f362e1e212ca8e05d19867fb494c46fd32f5b91a1013c9373f6c4c66c9a3"},
-    {file = "pybinpatch-1.0.6.tar.gz", hash = "sha256:51a1531ac1457b7459b1fcdecf37fd1012e12a464fab235dcb118c44de2df1fa"},
+    {file = "pybinpatch-1.0.7-py3-none-any.whl", hash = "sha256:e7e390bd35b64175289ce8bbe8f905aeaf7dc69e8ff5af92553a8ef2ea77b298"},
+    {file = "pybinpatch-1.0.7.tar.gz", hash = "sha256:f1ed8f58fec4b7f40c26aeaeb7b4bdaf4f0626ba81d465e1f974f199cc555e54"},
 ]
 
 [metadata]
