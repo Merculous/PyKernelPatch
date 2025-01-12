@@ -21,15 +21,31 @@ class BaseClass:
 class AppleImage3NORAccess3(BaseClass):
     def __init__(self, data: Buffer, log: bool = True) -> None:
         super().__init__(data, log)
-
+    
+        self.kext_offset = self.getKextStart()
         self.hwdinfo_from_image = self.find_hwdinfo_func()
         self.llb_decrypt_personalized = self.find_llb_decrypt_personalized()
+
+    def getKextStart(self) -> int:
+        # KModInfo
+        norStr = b'com.apple.driver.AppleImage3NORAccess'
+        norStrOffset = self.data.find(norStr)
+
+        if norStrOffset == -1:
+            raise Exception(f'Failed to find {norStr.decode()}!')
+
+        kextRelStart = self.data.find(b'\xfe\xed\xfa\xce'[::-1], norStrOffset - 0x10000)
+
+        if kextRelStart == -1:
+            raise Exception('Failed to find 0xfeedface!')
+
+        return kextRelStart
 
     def find_hwdinfo_func(self) -> int:
         if self.log:
             print('find_hwdinfo_func()')
 
-        ldrPROD = find_next_LDR_Literal(self.data, 0, 0, b'PROD'[::-1])
+        ldrPROD = find_next_LDR_Literal(self.data, self.kext_offset, 0, b'PROD'[::-1])
 
         if ldrPROD is None:
             raise Exception('Failed to find LDR Rx, PROD!')
@@ -253,7 +269,7 @@ class AppleImage3NORAccess4(AppleImage3NORAccess3):
         if self.log:
             print('find_hwdinfo_func()')
 
-        ldrPROD = find_next_LDR_W_with_value(self.data, 0, 0, b'PROD'[::-1])
+        ldrPROD = find_next_LDR_W_with_value(self.data, self.kext_offset, 0, b'PROD'[::-1])
 
         if ldrPROD is None:
             raise Exception('Failed to find LDR.W Rx, PROD!')
@@ -279,7 +295,7 @@ class AppleImage3NORAccess4(AppleImage3NORAccess3):
         if self.log:
             print('find_hwdinfo_prod()')
 
-        ldrPROD = find_next_LDR_W_with_value(self.data, 0, 0, b'PROD'[::-1])
+        ldrPROD = find_next_LDR_W_with_value(self.data, self.hwdinfo_from_image, 0, b'PROD'[::-1])
 
         if ldrPROD is None:
             raise Exception('Failed to find LDR.W Rx, PROD!')
@@ -310,7 +326,7 @@ class AppleImage3NORAccess5(AppleImage3NORAccess4):
         if self.log:
             print('find_hwdinfo_func()')
 
-        movt = find_next_MOVT_with_value(self.data, 0, 1, int.from_bytes(b'PR'))
+        movt = find_next_MOVT_with_value(self.data, self.kext_offset, 0, int.from_bytes(b'PR'))
 
         if movt is None:
             raise Exception('Failed to find MOVT Rx, PR!')
