@@ -7,26 +7,19 @@ an iOS kernel in particular.
 
 # How the project works
 
-So far, the only thing that is being done is that a binary file is being
-passed to find offsets with a given pattern and is patching 1 or more bytes to
-disable certain aspects of a decrypted kernelcache to enable restoring unsigned
-firmware. This does not patch the kernel to be used in a jailbroken environment.
-That requires more patches, but will be added to this project eventually.
+The kernel patcher uses PyARMFind, my ARM (THUMB) instruction finder. This
+is like the patchfinder's used in iBoot32Patcher and jailbreaks. 
 
 # What's being patched
 
-Unfortunately, I'm not fully certain what these patches do, however I know that
-the patches that are being used tie into codesigning, amfi, signature checking,
-and more. I'm not aware exactly what is being patched, but the patches that are
-being used are derived from the sn0wbreeze project, which provides patched iOS
-ipsw's which can be used to either jailbreak or to preserve the baseband that
-comes with the ipsw. So far, the patches that are from the baseband preservation
-mode that sn0wbreeze offers are being used in this project.
+Patches AppleImage3NORAccess.kext to allow unsigned and unpersonalized img3's
+to be flashed to NOR during a pwned custom restore. This is for devices with
+untethered ROM exploit only for the moment. This is ideal for devices like the
+iPhone 3GS which has 24KPWN and Alloc8 exploit.
 
 # What versions and devices are supported
 
 iPhone 3GS:
 - 3.0, 3.0.1, 3.1, 3.1.2, 3.1.3
-- 4.0, 4.0.1, 4.0.2, 4.1, 4.2.1, 4.3, 4.3.1, 4.3.2, 4.3.3
+- 4.0, 4.0.1, 4.0.2, 4.1, 4.2.1, 4.3, 4.3.1, 4.3.2, 4.3.3, 4.3.4, 4.3.5
 - 5.0, 5.0.1, 5.1, 5.1.1  
-- 6.0, 6.0.1, 6.1, 6.1.2, 6.1.3, 6.1.6
