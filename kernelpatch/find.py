@@ -1,565 +1,408 @@
 
-import struct
-
 from armfind.find import (find_next_BL, find_next_blx_register,
                           find_next_CMP_with_value, find_next_LDR_Literal,
                           find_next_LDR_W_with_value, find_next_MOV_register,
                           find_next_MOV_W_with_value,
                           find_next_MOVT_with_value, find_next_MOVW_with_value,
-                          find_next_pop, find_next_push)
+                          find_next_pop)
 from binpatch.types import Buffer
-from binpatch.utils import getBufferAtIndex
+
+from .const import VERSIONS
+from .utils import getNullTerminatedStringAtIndex
 
 
 class BaseClass:
     def __init__(self, data: Buffer, log: bool = True) -> None:
-        self.data = data
+        self._data = data
         self.log = log
-        self.loadAddr = struct.unpack('<I', getBufferAtIndex(self.data, 0x34, 4))[0]
+        self.version = self.getiOSVersion()
+
+    def getiOSVersion(self) -> int:
+        darwinStr = b'Darwin Kernel Version'
+        darwinStrOffset = self._data.find(darwinStr)
+
+        if darwinStrOffset == -1:
+            raise Exception('Failed to find darwin kernel version string!')
+
+        darwinVersionStr = getNullTerminatedStringAtIndex(self._data, darwinStrOffset)
+
+        if self.log:
+            print(f'Found {darwinVersionStr} at {darwinStrOffset:x}')
+
+        versionStr = darwinVersionStr.split('root:xnu-')[1].split('~')[0]
+        version = int(versionStr.split('.')[0])
+
+        match = None
+
+        for x in VERSIONS:
+            if version not in VERSIONS[x]:
+                continue
+
+            match = x
+            break
+
+        if self.log:
+            print(f'Detected current kernel is iOS {match}.x')
+
+        if match is None:
+            raise Exception('Unable to determine iOS!')
+
+        return match
 
 
-class AppleImage3NORAccess3(BaseClass):
+class AppleImage3NORAccess(BaseClass):
     def __init__(self, data: Buffer, log: bool = True) -> None:
         super().__init__(data, log)
-    
-        self.kext_offset = self.getKextStart()
-        self.hwdinfo_from_image = self.find_hwdinfo_func()
-        self.llb_decrypt_personalized = self.find_llb_decrypt_personalized()
+
+        self.kextStart = self.getKextStart()
 
     def getKextStart(self) -> int:
-        # KModInfo
-        norStr = b'com.apple.driver.AppleImage3NORAccess'
-        norStrOffset = self.data.find(norStr)
+        kModStr = b'com.apple.driver.AppleImage3NORAccess'
+        kModStrOffset = self._data.find(kModStr)
 
-        if norStrOffset == -1:
-            raise Exception(f'Failed to find {norStr.decode()}!')
-
-        kextRelStart = self.data.find(b'\xfe\xed\xfa\xce'[::-1], norStrOffset - 0x10000)
-
-        if kextRelStart == -1:
-            raise Exception('Failed to find 0xfeedface!')
-
-        return kextRelStart
-
-    def find_hwdinfo_func(self) -> int:
-        if self.log:
-            print('find_hwdinfo_func()')
-
-        ldrPROD = find_next_LDR_Literal(self.data, self.kext_offset, 0, b'PROD'[::-1])
-
-        if ldrPROD is None:
-            raise Exception('Failed to find LDR Rx, PROD!')
-        
-        ldrPROD, ldrPRODOffset = ldrPROD
+        if kModStrOffset == -1:
+            raise Exception(f'Failed to find {kModStr.decode()}')
 
         if self.log:
-            print(f'Found LDR Rx, PROD at {ldrPRODOffset:x}')
+            print(f'Found {kModStr.decode()} at {kModStrOffset:x}')
 
-        push = find_next_push(self.data, ldrPRODOffset - 0x100, 0)
+        # Adjust offset a bit (hacky)
+        kModStrOffset -= 0x10000
+        return kModStrOffset
 
-        if push is None:
-            raise Exception('Failed to find PUSH!')
-
-        push, pushOffset = push
-
-        if self.log:
-            print(f'Found PUSH at {pushOffset:x}')
-
-        return pushOffset
-    
-    def find_hwdinfo_prod(self) -> int:
-        if self.log:
-            print('find_hwdinfo_prod()')
-
-        ldrPROD = find_next_LDR_Literal(self.data, self.hwdinfo_from_image, 0, b'PROD'[::-1])
-
-        if ldrPROD is None:
-            raise Exception('Failed to find LDR Rx, PROD!')
-        
-        ldrPROD, ldrPRODOffset = ldrPROD
-
-        if self.log:
-            print(f'Found LDR Rx, PROD at {ldrPRODOffset:x}')
-
-        bl = find_next_BL(self.data, ldrPRODOffset, 0)
-
-        if bl is None:
-            raise Exception('Failed to find BL!')
-
-        bl, blOffset = bl
-
-        if self.log:
-            print(f'Found BL at {blOffset:x}')
-
-        return blOffset
-    
-    def find_hwdinfo_ecid(self) -> int:
-        if self.log:
-            print('find_hwdinfo_ecid()')
-
-        ldrECID = find_next_LDR_Literal(self.data, self.hwdinfo_from_image, 0, b'ECID'[::-1])
-
-        if ldrECID is None:
-            raise Exception('Failed to find LDR Rx, ECID!')
-        
-        ldrECID, ldrECIDOffset = ldrECID
-
-        if self.log:
-            print(f'Found LDR Rx, ECID at {ldrECIDOffset:x}')
-
-        bl = find_next_BL(self.data, ldrECIDOffset, 0)
-
-        if bl is None:
-            raise Exception('Failed to find BL!')
-        
-        bl, blOffset = bl
-
-        if self.log:
-            print(f'Found BL at {blOffset:x}')
-
-        return blOffset
-
-    def find_llb_decrypt_personalized(self) -> int:
-        if self.log:
-            print('find_llb_decrypt_personalized()')
-
-        movw = find_next_MOVW_with_value(self.data, self.hwdinfo_from_image, 0, 0x836)
-
-        if movw is None:
-            raise Exception('Failed to find MOVW Rx, #0x836!')
-
-        movw, movwOffset = movw
-
-        if self.log:
-            print(f'Found MOVW Rx, #0x836 at {movwOffset:x}')
-
-        push = find_next_push(self.data, movwOffset - 0x250, 0)
-
-        if push is None:
-            raise Exception('Failed to find PUSH!')
-
-        push, pushOffset = push
-
-        if self.log:
-            print(f'Found PUSH at {pushOffset:x}')
-
-        return pushOffset
-
-    def find_image3_validate_check(self) -> int:
-        if self.log:
-            print('find_image3_validate_check()')
-
-        ldrSHSH = find_next_LDR_Literal(self.data, self.llb_decrypt_personalized, 0, b'SHSH'[::-1])
-
-        if ldrSHSH is None:
-            raise Exception('Failed to find LDR Rx, SHSH!')
-
-        ldrSHSH, ldrSHSHOffset = ldrSHSH
-
-        if self.log:
-            print(f'Found LDR Rx, SHSH at {ldrSHSHOffset:x}')
-
-        cmp = find_next_CMP_with_value(self.data, ldrSHSHOffset, 1, 0)
-
-        if cmp is None:
-            raise Exception('Failed to find CMP Rx, #0!')
-
-        cmp, cmpOffset = cmp
-
-        if self.log:
-            print(f'Found CMP Rx, #0 at {cmpOffset:x}')
-
-        return cmpOffset
-
-    def find_hwdinfo_check(self) -> int:
-        if self.log:
-            print(f'find_hwdinfo_check()')
-
-        ldrSHSH = find_next_LDR_Literal(self.data, self.llb_decrypt_personalized, 0, b'SHSH'[::-1])
-
-        if ldrSHSH is None:
-            raise Exception('Failed to find LDR Rx, SHSH!')
-
-        ldrSHSH, ldrSHSHOffset = ldrSHSH
-
-        if self.log:
-            print(f'Found LDR Rx, SHSH at {ldrSHSHOffset:x}')
-
-        bl = find_next_BL(self.data, ldrSHSHOffset, 0)
-
-        if bl is None:
-            raise Exception('Failed to find BL!')
-
-        bl, blOffset = bl
-
-        if self.log:
-            print(f'Found BL at {blOffset:x}')
-
-        cmp = find_next_CMP_with_value(self.data, blOffset, 0, 0)
-
-        if cmp is None:
-            raise Exception('Failed to find CMP Rx, #0!')
-
-        cmp, cmpOffset = cmp
-
-        if self.log:
-            print(f'Found CMP Rx, #0 at {cmpOffset:x}')
-
-        return cmpOffset
-
-    def find_shsh_encrypt(self) -> int:
-        if self.log:
-            print('find_shsh_encrypt()')
-
-        movw = find_next_MOVW_with_value(self.data, self.llb_decrypt_personalized, 0, 0x836)
-
-        if movw is None:
-            raise Exception('Failed to find MOVW Rx, #0x836!')
-        
-        movw, movwOffset = movw
-
-        if self.log:
-            print(f'Found MOVW Rx, #0x836 at {movwOffset:x}')
-
-        bl = find_next_BL(self.data, movwOffset, 2)
-
-        if bl is None:
-            raise Exception('Failed to find BL!')
-        
-        bl, blOffset = bl
-
-        if self.log:
-            print(f'Found BL at {blOffset:x}')
-
-        return blOffset
-
-
-    def find_pk_verify_sha1(self) -> int:
-        if self.log:
-            print('find_pk_verify_sha1()')
-
-        movw = find_next_MOVW_with_value(self.data, self.llb_decrypt_personalized, 0, 0x4BF)
-
-        if movw is None:
-            raise Exception('Failed to find MOVW Rx, #0x4BF!')
-
-        movw, movwOffset = movw
-
-        if self.log:
-            print(f'Found MOVW Rx, #0x4BF at {movwOffset:x}')
-
-        movw_w = find_next_MOV_W_with_value(self.data, movwOffset, 0, 0x3FF)
-
-        if movw_w is None:
-            raise Exception('Failed to find MOV.W Rx, #0xFFFFFFFF')
-
-        movw_w, movw_wOffset = movw_w
-
-        if self.log:
-            print(f'Found MOV.W Rx, #0xFFFFFFFF at {movw_wOffset:x}')
-
-        return movw_wOffset
-
-
-class AppleImage3NORAccess4(AppleImage3NORAccess3):
-    def __init__(self, data: Buffer, log: bool = True) -> None:
-        super().__init__(data, log)
-
-    def find_hwdinfo_func(self) -> int:
-        if self.log:
-            print('find_hwdinfo_func()')
-
-        ldrPROD = find_next_LDR_W_with_value(self.data, self.kext_offset, 0, b'PROD'[::-1])
-
-        if ldrPROD is None:
-            raise Exception('Failed to find LDR.W Rx, PROD!')
-        
-        ldrPROD, ldrPRODOffset = ldrPROD
-
-        if self.log:
-            print(f'Found LDR.W Rx, PROD at {ldrPRODOffset:x}')
-
-        push = find_next_push(self.data, ldrPRODOffset - 0x100, 0)
-
-        if push is None:
-            raise Exception('Failed to find PUSH!')
-
-        push, pushOffset = push
-
-        if self.log:
-            print(f'Found PUSH at {pushOffset:x}')
-
-        return pushOffset
 
     def find_hwdinfo_prod(self) -> int:
-        if self.log:
-            print('find_hwdinfo_prod()')
+        insn = None
 
-        ldrPROD = find_next_LDR_W_with_value(self.data, self.hwdinfo_from_image, 0, b'PROD'[::-1])
+        if self.version in (3, 4):
+            if self.version == 3:
+                insn = find_next_LDR_Literal(self._data, self.kextStart, 0, b'PROD'[::-1])
+            else:
+                insn = find_next_LDR_W_with_value(self._data, self.kextStart, 0, b'PROD'[::-1])
 
-        if ldrPROD is None:
-            raise Exception('Failed to find LDR.W Rx, PROD!')
-        
-        ldrPROD, ldrPRODOffset = ldrPROD
+            if insn is None:
+                raise Exception('Failed to find LDR(.W)!')
 
-        if self.log:
-            print(f'Found LDR.W Rx, PROD at {ldrPRODOffset:x}')
+            insn, insnOffset = insn
 
-        bl = find_next_BL(self.data, ldrPRODOffset, 0)
+            if self.log:
+                print(f'Found LDR(.W) Rx, PROD at {insnOffset:x}')
 
-        if bl is None:
-            raise Exception('Failed to find Bl!')
-        
-        bl, blOffset = bl
+            bl = find_next_BL(self._data, insnOffset, 0)
 
-        if self.log:
-            print(f'Found BL at {blOffset:x}')
+            if bl is None:
+                raise Exception('Failed to find BL!')
 
-        return blOffset
+            bl, blOffset = bl
 
+            if self.log:
+                print(f'Found BL at {blOffset:x}')
 
-class AppleImage3NORAccess5(AppleImage3NORAccess4):
-    def __init__(self, data: Buffer, log: bool = True) -> None:
-        super().__init__(data, log)
+            return blOffset
 
-    def find_hwdinfo_func(self) -> int:
-        if self.log:
-            print('find_hwdinfo_func()')
+        elif self.version == 5:
+            insn = find_next_MOVT_with_value(self._data, self.kextStart, 0, 0x5052)
 
-        movt = find_next_MOVT_with_value(self.data, self.kext_offset, 0, int.from_bytes(b'PR'))
+            if insn is None:
+                raise Exception('Failed to find MOVT Rx, PR!')
 
-        if movt is None:
-            raise Exception('Failed to find MOVT Rx, PR!')
+            insn, insnOffset = insn
 
-        movt, movtOffset = movt
+            if self.log:
+                print(f'Found MOVT Rx, PR at {insnOffset:x}')
 
-        if self.log:
-            print(f'Found MOVT Rx, PR at {movtOffset:x}')
+            blx = find_next_blx_register(self._data, insnOffset, 0)
 
-        push = find_next_push(self.data, movtOffset - 0x150, 0)
+            if blx is None:
+                raise Exception('Failed to find BLX!')
 
-        if push is None:
-            raise Exception('Failed to find PUSH!')
+            blx, blxOffset = blx
 
-        push, pushOffset = push
+            if self.log:
+                print(f'Found BLX at {blxOffset:x}')
 
-        if self.log:
-            print(f'Found PUSH at {pushOffset:x}')
+            return blxOffset
 
-        return pushOffset
-
-    def find_hwdinfo_prod(self) -> int:
-        if self.log:
-            print('find_hwdinfo_prod()')
-
-        movt = find_next_MOVT_with_value(self.data, self.hwdinfo_from_image, 0, int.from_bytes(b'PR'))
-
-        if movt is None:
-            raise Exception('Failed to find MOVT Rx, PR!')
-
-        movt, movtOffset = movt
-
-        if self.log:
-            print(f'Found MOVT Rx, PR at {movtOffset:x}')
-
-        blx = find_next_blx_register(self.data, movtOffset, 0)
-
-        if blx is None:
-            raise Exception('Failed to find BLX!')
-
-        blx, blxOffset = blx
-
-        if self.log:
-            print(f'Found BLX at {blxOffset:x}')
-
-        return blxOffset
+        else:
+            raise Exception('UNIMPLEMENTED')
 
     def find_hwdinfo_ecid(self) -> int:
-        if self.log:
-            print('find_hwdinfo_ecid()')
+        insn = None
 
-        movt = find_next_MOVT_with_value(self.data, self.hwdinfo_from_image, 0, int.from_bytes(b'EC'))
+        if self.version in (3, 4):
+            if self.version == 3:
+                insn = find_next_LDR_Literal(self._data, self.kextStart, 0 , b'ECID'[::-1])
+            else:
+                insn = find_next_LDR_W_with_value(self._data, self.kextStart, 0, b'ECID'[::-1])
 
-        if movt is None:
-            raise Exception('Failed to find MOVT Rx, EC!')
-        
-        movt, movtOffset = movt
+            if insn is None:
+                raise Exception('Failed to find LDR(.W) Rx, ECID!')
 
-        if self.log:
-            print(f'Found MOVT Rx, EC at {movtOffset:x}')
+            insn, insnOffset = insn
 
-        blx = find_next_blx_register(self.data, movtOffset, 0)
+            if self.log:
+                print(f'Found LDR(.W) Rx, ECID at {insnOffset:x}')
 
-        if blx is None:
-            raise Exception('Failed to find BLX!')
-        
-        blx, blxOffset = blx
+            bl = find_next_BL(self._data, insnOffset, 0)
 
-        if self.log:
-            print(f'Found BLX at {blxOffset:x}')
+            if bl is None:
+                raise Exception('Failed to find BL!')
 
-        return blxOffset
+            bl, blOffset = bl
 
-    def find_llb_decrypt_personalized(self) -> int:
-        if self.log:
-            print('llb_decrypt_personalized()')
+            if self.log:
+                print(f'Found BL at {blOffset:x}')
 
-        movt = find_next_MOVT_with_value(self.data, self.hwdinfo_from_image, 2, int.from_bytes(b'SH'))
+            return blOffset
 
-        if movt is None:
-            raise Exception('Failed to find MOVT Rx, SH!')
-        
-        movt, movtOffset = movt
+        elif self.version == 5:
+            insn = find_next_MOVT_with_value(self._data, self.kextStart, 0, 0x4543)
 
-        if self.log:
-            print(f'Found MOVT Rx, SH at {movtOffset:x}')
+            if insn is None:
+                raise Exception('Failed to find MOVT Rx, EC!')
 
-        push = find_next_push(self.data, movtOffset - 0xD0, 0)
+            insn, insnOffset = insn
 
-        if push is None:
-            raise Exception('Failed to find PUSH!')
-        
-        push, pushOffset = push
+            if self.log:
+                print(f'Found MOVT Rx, EC at {insnOffset:x}')
 
-        if self.log:
-            print(f'Found PUSH at {pushOffset:x}')
+            blx = find_next_blx_register(self._data, insnOffset, 0)
 
-        return pushOffset
+            if blx is None:
+                raise Exception('Failed to BLX!')
 
-    def find_image3_validate_check(self) -> int:
-        if self.log:
-            print('find_image3_validate_check()')
+            blx, blxOffset = blx
 
-        movt = find_next_MOVT_with_value(self.data, self.llb_decrypt_personalized, 0, int.from_bytes(b'SH'))
+            if self.log:
+                print(f'Found BLX at {blxOffset:x}')
 
-        if movt is None:
-            raise Exception('Failed to find MOVT Rx, SH!')
-        
-        movt, movtOffset = movt
+            return blxOffset
 
-        if self.log:
-            print(f'Found MOVT Rx, SH at {movtOffset:x}')
+        else:
+            raise Exception('UNIMPLEMENTED')
 
-        blx = find_next_blx_register(self.data, movtOffset, 1)
+    def find_validate_check(self) -> int:
+        insn = None
 
-        if blx is None:
-            raise Exception('Failed to find BLX!')
-        
-        blx, blxOffset = blx
+        if self.version in (3, 4):
+            insn = find_next_LDR_Literal(self._data, self.kextStart, 2, b'SHSH'[::-1])
 
-        if self.log:
-            print(f'Found BLX at {blxOffset:x}')
+            if insn is None:
+                raise Exception('Failed to find LDR Rx, SHSH!')
 
-        cmp = find_next_CMP_with_value(self.data, blxOffset, 0, 0)
+            insn, insnOffset = insn
 
-        if cmp is None:
-            raise Exception('Failed to find CMP Rx, #0!')
-        
-        cmp, cmpOffset = cmp
+            if self.log:
+                print(f'Found LDR Rx, SHSH at {insnOffset:x}')
 
-        if self.log:
-            print(f'Found CMP Rx, #0 at {cmpOffset:x}')
+            cmp = find_next_CMP_with_value(self._data, insnOffset, 1, 0)
 
-        return cmpOffset
+            if cmp is None:
+                raise Exception('Failed to find CMP Rx, #0!')
+
+            cmp, cmpOffset = cmp
+
+            if self.log:
+                print(f'Found CMP Rx, #0 at {cmpOffset:x}')
+
+            return cmpOffset
+
+        elif self.version == 5:
+            insn = find_next_MOVT_with_value(self._data, self.kextStart, 2, 0x5348)
+
+            if insn is None:
+                raise Exception('Failed to find MOVT Rx, SH!')
+
+            insn, insnOffset = insn
+
+            if self.log:
+                print(f'Found MOVT Rx, SH at {insnOffset:x}')
+
+            cmp = find_next_CMP_with_value(self._data, insnOffset, 0, 0)
+
+            if cmp is None:
+                raise Exception('Failed to find CMP Rx, #0!')
+
+            cmp, cmpOffset = cmp
+
+            if self.log:
+                print(f'Found CMP Rx, #0 at {cmpOffset:x}')
+
+            return cmpOffset
+
+        else:
+            raise Exception('UNIMPLEMENTED')
 
     def find_hwdinfo_check(self) -> int:
-        if self.log:
-            print('find_hwdinfo_check()')
+        insn = None
 
-        movt = find_next_MOVT_with_value(self.data, self.llb_decrypt_personalized, 0, int.from_bytes(b'SH'))
+        if self.version in (3, 4):
+            insn = find_next_LDR_Literal(self._data, self.kextStart, 2, b'SHSH'[::-1])
 
-        if movt is None:
-            raise Exception('Failed to find MOVT Rx, SH!')
-        
-        movt, movtOffset = movt
+            if insn is None:
+                raise Exception('Failed to find LDR Rx, SHSH!')
 
-        if self.log:
-            print(f'Found MOVT Rx, SH at {movtOffset:x}')
+            insn, insnOffset = insn
 
-        blx = find_next_blx_register(self.data, movtOffset, 2)
+            if self.log:
+                print(f'Found LDR Rx, SHSH at {insnOffset:x}')
 
-        if blx is None:
-            raise Exception('Failed to find BLX!')
-        
-        blx, blxOffset = blx
+            cmp = find_next_CMP_with_value(self._data, insnOffset, 2, 0)
 
-        if self.log:
-            print(f'Found BLX at {blxOffset:x}')
+            if cmp is None:
+                raise Exception('Failed to find CMP Rx, #0!')
 
-        cmp = find_next_CMP_with_value(self.data, blxOffset, 0, 0)
+            cmp, cmpOffset = cmp
 
-        if cmp is None:
-            raise Exception('Failed to find CMP Rx, #0!')
-        
-        cmp, cmpOffset = cmp
+            if self.log:
+                print(f'Found CMP Rx, #0 at {cmpOffset:x}')
 
-        if self.log:
-            print(f'Found CMP Rx, #0 at {cmpOffset:x}')
+            return cmpOffset
 
-        return cmpOffset
+        elif self.version == 5:
+            insn = find_next_MOVT_with_value(self._data, self.kextStart, 2, 0x5348)
+
+            if insn is None:
+                raise Exception('Failed to find MOVT Rx, SH!')
+
+            insn, insnOffset = insn
+
+            if self.log:
+                print(f'Found MOVT Rx, SH at {insnOffset:x}')
+
+            cmp = find_next_CMP_with_value(self._data, insnOffset, 1, 0)
+
+            if cmp is None:
+                raise Exception('Failed to find CMP Rx, #0!')
+
+            cmp, cmpOffset = cmp
+
+            if self.log:
+                print(f'Found CMP Rx, #0 at {cmpOffset:x}')
+
+            return cmpOffset
+
+        else:
+            raise Exception('UNIMPLEMENTED')
 
     def find_shsh_encrypt(self) -> int:
-        if self.log:
-            print('find_shsh_encrypt()')
+        insn = None
 
-        movw = find_next_MOVW_with_value(self.data, self.llb_decrypt_personalized, 0, 0x836)
+        if self.version in (3, 4):
+            insn = find_next_LDR_Literal(self._data, self.kextStart, 2, b'SHSH'[::-1])
 
-        if movw is None:
-            raise Exception('Failed to find MOVW Rx, #0x836!')
-        
-        movw, movwOffset = movw
+            if insn is None:
+                raise Exception('Failed to find LDR Rx, SHSH!')
 
-        if self.log:
-            print(f'Found MOVW Rx, #0x836 at {movwOffset:x}')
+            insn, insnOffset = insn
 
-        blx = find_next_blx_register(self.data, movwOffset, 3)
+            if self.log:
+                print(f'Found LDR Rx, SHSH at {insnOffset:x}')
 
-        if blx is None:
-            raise Exception('Failed to find BLX!')
-        
-        blx, blxOffset = blx
+            movw = find_next_MOVW_with_value(self._data, insnOffset, 0, 0x836)
 
-        if self.log:
-            print(f'Found BLX at {blxOffset:x}')
+            if movw is None:
+                raise Exception('Failed to find MOVW Rx, #0x836!')
 
-        return blxOffset
+            movw, movwOffset = movw
+
+            if self.log:
+                print(f'Found MOVW Rx, #0x836 at {movwOffset:x}')
+
+            bl = find_next_BL(self._data, movwOffset, 2)
+
+            if bl is None:
+                raise Exception('Failed to find BL!')
+
+            bl, blOffset = bl
+
+            if self.log:
+                print(f'Found BL at {blOffset:x}')
+
+            return blOffset
+
+        elif self.version == 5:
+            insn = find_next_MOVT_with_value(self._data, self.kextStart, 2, 0x5348)
+
+            if insn is None:
+                raise Exception('Failed to find MOVT Rx, SH!')
+
+            insn, insnOffset = insn
+
+            if self.log:
+                print(f'Found MOVT Rx, SH at {insnOffset:x}')
+
+            movw = find_next_MOVW_with_value(self._data, insnOffset, 0, 0x836)
+
+            if movw is None:
+                raise Exception('Failed to find MOVW Rx, #0x836!')
+
+            movw, movwOffset = movw
+
+            if self.log:
+                print(f'Found MOVW Rx, #0x836 at {movwOffset:x}')
+
+            blx = find_next_blx_register(self._data, movwOffset, 3)
+
+            if blx is None:
+                raise Exception('Failed to find BLX!')
+            
+            blx, blxOffset = blx
+
+            if self.log:
+                print(f'Found BLX at {blxOffset:x}')
+
+            return blxOffset
+
+        else:
+            raise Exception('UNIMPLEMENTED')
 
     def find_pk_verify_sha1(self) -> int:
-        if self.log:
-            print('find_pk_verify_sha1()')
+        insn = find_next_MOVW_with_value(self._data, self.kextStart, 0, 0x4BF)
 
-        movw = find_next_MOVW_with_value(self.data, self.llb_decrypt_personalized, 0, 0x4BF)
-
-        if movw is None:
+        if insn is None:
             raise Exception('Failed to find MOVW Rx, #0x4BF!')
-
-        movw, movwOffset = movw
-
-        if self.log:
-            print(f'Found MOVW Rx, 0x4BF at {movwOffset:x}')
-
-        pop = find_next_pop(self.data, movwOffset, 0)
-
-        if pop is None:
-            raise Exception('Failed to find POP!')
-
-        pop, popOffset = pop
+        
+        insn, insnOffset = insn
 
         if self.log:
-            print(f'Found POP at {popOffset:x}')
+            print(f'Found MOVW Rx, #0x4BF at {insnOffset:x}')
 
-        mov = find_next_MOV_register(self.data, popOffset - 0x10, 0)
+        if self.version in (3, 4):
+            movw = find_next_MOV_W_with_value(self._data, insnOffset, 0, 0x3FF)
 
-        if mov is None:
-            raise Exception('Failed to find MOV Rx, Rx!')
+            if movw is None:
+                raise Exception('Failed to find MOV.W Rx, #0xFFFFFFFF!')
+            
+            movw, movwOffset = movw
 
-        mov, movOffset = mov
+            if self.log:
+                print(f'Found MOV.W Rx, #0xFFFFFFFF at {movwOffset:x}')
 
-        if self.log:
-            print(f'Found MOV Rx, Rx at {movOffset:x}')
+            return movwOffset
+        
+        elif self.version == 5:
+            pop = find_next_pop(self._data, insnOffset, 0)
 
-        return movOffset
+            if pop is None:
+                raise Exception('Failed to find POP!')
+            
+            pop, popOffset = pop
 
+            if self.log:
+                print(f'Found POP at {popOffset:x}')
 
-class AppleImage3NORAccess6(AppleImage3NORAccess5):
-    pass
+            mov = find_next_MOV_register(self._data, popOffset - 0x10, 0)
+
+            if mov is None:
+                raise Exception('Failed to find MOV Rx, Rx!')
+
+            mov, movOffset = mov
+
+            if self.log:
+                print(f'Found MOV Rx, Rx at {movOffset:x}')
+
+            return movOffset
+
+        else:
+            raise Exception('UNIMPLEMENTED')
