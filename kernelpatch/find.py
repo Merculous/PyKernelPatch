@@ -130,10 +130,7 @@ class AppleImage3NORAccess(BaseClass):
         insn = None
 
         if self.version in (3, 4):
-            if self.version == 3:
-                insn = find_next_LDR_Literal(self._data, self.kextStart, 0 , b'ECID'[::-1])
-            else:
-                insn = find_next_LDR_W_with_value(self._data, self.kextStart, 0, b'ECID'[::-1])
+            insn = find_next_LDR_Literal(self._data, self.kextStart, 0 , b'ECID'[::-1])
 
             if insn is None:
                 raise Exception('Failed to find LDR(.W) Rx, ECID!')
