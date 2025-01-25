@@ -7,52 +7,20 @@ from armfind.find import (find_next_BL, find_next_blx_register,
                           find_next_pop)
 from binpatch.types import Buffer
 
-from .const import VERSIONS
-from .utils import getNullTerminatedStringAtIndex
-
 
 class BaseClass:
-    def __init__(self, data: Buffer, log: bool = True) -> None:
+    def __init__(self, data: Buffer, version: int, log: bool = True) -> None:
         self._data = data
         self.log = log
-        self.version = self.getiOSVersion()
+        self.version = version
 
-    def getiOSVersion(self) -> int:
-        darwinStr = b'Darwin Kernel Version'
-        darwinStrOffset = self._data.find(darwinStr)
-
-        if darwinStrOffset == -1:
-            raise Exception('Failed to find darwin kernel version string!')
-
-        darwinVersionStr = getNullTerminatedStringAtIndex(self._data, darwinStrOffset)
-
-        if self.log:
-            print(f'Found {darwinVersionStr} at {darwinStrOffset:x}')
-
-        versionStr = darwinVersionStr.split('root:xnu-')[1].split('~')[0]
-        version = int(versionStr.split('.')[0])
-
-        match = None
-
-        for x in VERSIONS:
-            if version not in VERSIONS[x]:
-                continue
-
-            match = x
-            break
-
-        if self.log:
-            print(f'Detected current kernel is iOS {match}.x')
-
-        if match is None:
-            raise Exception('Unable to determine iOS!')
-
-        return match
+    def getiOSVersion(self) -> None:
+        pass
 
 
 class AppleImage3NORAccess(BaseClass):
-    def __init__(self, data: Buffer, log: bool = True) -> None:
-        super().__init__(data, log)
+    def __init__(self, data: Buffer, version: int, log: bool = True) -> None:
+        super().__init__(data, version, log)
 
         self.kextStart = self.getKextStart()
 

@@ -6,8 +6,8 @@ from .find import AppleImage3NORAccess
 
 
 class AppleImage3NORAccessPatcher(AppleImage3NORAccess):
-    def __init__(self, data: Buffer, log: bool = True) -> None:
-        super().__init__(data, log)
+    def __init__(self, data: Buffer, version: int, log: bool = True) -> None:
+        super().__init__(data, version, log)
 
         self.patchedData = self._data[:]
 

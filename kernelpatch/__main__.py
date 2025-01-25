@@ -14,16 +14,19 @@ def main() -> None:
     parser.add_argument('-i', nargs=1, type=FilesystemPath)
     parser.add_argument('-o', nargs=1, type=FilesystemPath)
 
+    parser.add_argument('--ios', nargs=1, type=str)
+
     args = parser.parse_args()
 
     if not args.i and not args.o:
         return parser.print_help()
 
     inData = readBytesFromPath(args.i[0])
+    version = int(args.ios[0].split('.')[0]) if '.' in args.ios[0] else int(args.ios[0])
 
     startTime = perf_counter()
 
-    patcher = AppleImage3NORAccessPatcher(inData)
+    patcher = AppleImage3NORAccessPatcher(inData, version)
     patcher.patch_hwdinfo_prod()
     patcher.patch_hwdinfo_ecid()
     patcher.patch_validate_check()
