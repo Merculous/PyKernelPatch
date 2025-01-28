@@ -27,12 +27,21 @@ def main() -> None:
     startTime = perf_counter()
 
     patcher = AppleImage3NORAccessPatcher(inData, version)
-    patcher.patch_hwdinfo_prod()
-    patcher.patch_hwdinfo_ecid()
-    patcher.patch_validate_check()
-    patcher.patch_hwdinfo_check()
-    patcher.patch_shsh_encrypt()
-    patcher.patch_pk_verify_sha1()
+
+    if version in (3, 4, 5):
+        patcher.patch_hwdinfo_prod()
+        patcher.patch_hwdinfo_ecid()
+        patcher.patch_validate_check()
+        patcher.patch_hwdinfo_check()
+        patcher.patch_shsh_encrypt()
+        patcher.patch_pk_verify_sha1()
+
+    elif version == 6:
+        patcher.patch_validate_check()
+        patcher.patch_hwdinfo_check()
+
+    else:
+        print(f'iOS {version} not supported yet!')
 
     endTime = perf_counter() - startTime
 

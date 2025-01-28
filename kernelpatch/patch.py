@@ -34,11 +34,23 @@ class AppleImage3NORAccessPatcher(AppleImage3NORAccess):
 
     def patch_validate_check(self) -> None:
         offset = self.find_validate_check()
-        self.patchedData = replaceBufferAtIndex(self.patchedData, b'\x00\x20', offset, 2)
+
+        if self.version in (3, 4, 5):
+            self.patchedData = replaceBufferAtIndex(self.patchedData, b'\x00\x20', offset, 2)
+        elif self.version == 6:
+            self.patchedData = replaceBufferAtIndex(self.patchedData, b'\x00\x20\x00\x20', offset, 4)
+        else:
+            raise Exception('UNIMPLEMENTED!')
 
     def patch_hwdinfo_check(self) -> None:
         offset = self.find_hwdinfo_check()
-        self.patchedData = replaceBufferAtIndex(self.patchedData, b'\x00\x20', offset, 2)
+
+        if self.version in (3, 4, 5):
+            self.patchedData = replaceBufferAtIndex(self.patchedData, b'\x00\x20', offset, 2)
+        elif self.version == 6:
+            self.patchedData = replaceBufferAtIndex(self.patchedData, b'\x00\x20\x00\x20', offset, 4)
+        else:
+            raise Exception('UNIMPLEMENTED!')
 
     def patch_shsh_encrypt(self) -> None:
         offset = self.find_shsh_encrypt()

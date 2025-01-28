@@ -1,8 +1,8 @@
 
 from armfind.find import (find_next_BL, find_next_blx_register,
-                          find_next_CMP_with_value, find_next_LDR_Literal,
-                          find_next_LDR_W_with_value, find_next_MOV_register,
-                          find_next_MOV_W_with_value,
+                          find_next_BNE_W, find_next_CMP_with_value,
+                          find_next_LDR_Literal, find_next_LDR_W_with_value,
+                          find_next_MOV_register, find_next_MOV_W_with_value,
                           find_next_MOVT_with_value, find_next_MOVW_with_value,
                           find_next_pop)
 from binpatch.types import Buffer
@@ -172,28 +172,52 @@ class AppleImage3NORAccess(BaseClass):
 
             return cmpOffset
 
-        elif self.version == 5:
-            insn = find_next_MOVT_with_value(self._data, self.kextStart, 2, 0x5348)
+        elif self.version in (5, 6):
+            if self.version == 5:
+                insn = find_next_MOVT_with_value(self._data, self.kextStart, 2, 0x5348)
 
-            if insn is None:
-                raise Exception('Failed to find MOVT Rx, SH!')
+                if insn is None:
+                    raise Exception('Failed to find MOVT Rx, SH!')
 
-            insn, insnOffset = insn
+                insn, insnOffset = insn
 
-            if self.log:
-                print(f'Found MOVT Rx, SH at {insnOffset:x}')
+                if self.log:
+                    print(f'Found MOVT Rx, SH at {insnOffset:x}')
 
-            cmp = find_next_CMP_with_value(self._data, insnOffset, 0, 0)
+                cmp = find_next_CMP_with_value(self._data, insnOffset, 0, 0)
 
-            if cmp is None:
-                raise Exception('Failed to find CMP Rx, #0!')
+                if cmp is None:
+                    raise Exception('Failed to find CMP Rx, #0!')
 
-            cmp, cmpOffset = cmp
+                cmp, cmpOffset = cmp
 
-            if self.log:
-                print(f'Found CMP Rx, #0 at {cmpOffset:x}')
+                if self.log:
+                    print(f'Found CMP Rx, #0 at {cmpOffset:x}')
 
-            return cmpOffset
+                return cmpOffset
+            
+            else:
+                insn = find_next_MOVT_with_value(self._data, self.kextStart, 0, 0x5348)
+
+                if insn is None:
+                    raise Exception('Failed to find MOVT Rx, SH!')
+
+                insn, insnOffset = insn
+
+                if self.log:
+                    print(f'Found MOVT Rx, SH at {insnOffset:x}')
+
+                bnew = find_next_BNE_W(self._data, insnOffset, 1)
+
+                if bnew is None:
+                    raise Exception('Failed to find BNE.W!')
+
+                bnew, bnewOffset = bnew
+
+                if self.log:
+                    print(f'Found BNE.W at {bnewOffset:x}')
+
+                return bnewOffset
 
         else:
             raise Exception('UNIMPLEMENTED')
@@ -224,28 +248,52 @@ class AppleImage3NORAccess(BaseClass):
 
             return cmpOffset
 
-        elif self.version == 5:
-            insn = find_next_MOVT_with_value(self._data, self.kextStart, 2, 0x5348)
+        elif self.version in (5, 6):
+            if self.version == 5:
+                insn = find_next_MOVT_with_value(self._data, self.kextStart, 2, 0x5348)
 
-            if insn is None:
-                raise Exception('Failed to find MOVT Rx, SH!')
+                if insn is None:
+                    raise Exception('Failed to find MOVT Rx, SH!')
 
-            insn, insnOffset = insn
+                insn, insnOffset = insn
 
-            if self.log:
-                print(f'Found MOVT Rx, SH at {insnOffset:x}')
+                if self.log:
+                    print(f'Found MOVT Rx, SH at {insnOffset:x}')
 
-            cmp = find_next_CMP_with_value(self._data, insnOffset, 1, 0)
+                cmp = find_next_CMP_with_value(self._data, insnOffset, 1, 0)
 
-            if cmp is None:
-                raise Exception('Failed to find CMP Rx, #0!')
+                if cmp is None:
+                    raise Exception('Failed to find CMP Rx, #0!')
 
-            cmp, cmpOffset = cmp
+                cmp, cmpOffset = cmp
 
-            if self.log:
-                print(f'Found CMP Rx, #0 at {cmpOffset:x}')
+                if self.log:
+                    print(f'Found CMP Rx, #0 at {cmpOffset:x}')
 
-            return cmpOffset
+                return cmpOffset
+            
+            else:
+                insn = find_next_MOVT_with_value(self._data, self.kextStart, 0, 0x5348)
+
+                if insn is None:
+                    raise Exception('Failed to find MOVT Rx, SH!')
+
+                insn, insnOffset = insn
+
+                if self.log:
+                    print(f'Found MOVT Rx, SH at {insnOffset:x}')
+
+                bnew = find_next_BNE_W(self._data, insnOffset, 2)
+
+                if bnew is None:
+                    raise Exception('Failed to find BNE.W!')
+
+                bnew, bnewOffset = bnew
+
+                if self.log:
+                    print(f'Found BNE.W at {bnewOffset:x}')
+
+                return bnewOffset
 
         else:
             raise Exception('UNIMPLEMENTED')
