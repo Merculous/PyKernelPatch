@@ -10,26 +10,30 @@ files = []
 develop = false
 
 [package.dependencies]
-pybinpatch = "^1.0.6"
+pybinpatch = {git = "https://github.com/Merculous/PyBinPatch", rev = "update"}
 
 [package.source]
 type = "git"
 url = "https://github.com/Merculous/PyARMFind.git"
 reference = "HEAD"
-resolved_reference = "db33263da3ec919ab2a148327e0d365c61d63521"
+resolved_reference = "a120a8e2b9b80d014e22d90af43c017a778c3c51"
 
 [[package]]
 name = "pybinpatch"
-version = "1.0.7"
+version = "1.0.8"
 description = "Binary diff and patch lib"
 optional = false
-python-versions = "<4.0,>=3.11"
-files = [
-    {file = "pybinpatch-1.0.7-py3-none-any.whl", hash = "sha256:e7e390bd35b64175289ce8bbe8f905aeaf7dc69e8ff5af92553a8ef2ea77b298"},
-    {file = "pybinpatch-1.0.7.tar.gz", hash = "sha256:f1ed8f58fec4b7f40c26aeaeb7b4bdaf4f0626ba81d465e1f974f199cc555e54"},
-]
+python-versions = "^3.11"
+files = []
+develop = false
+
+[package.source]
+type = "git"
+url = "https://github.com/Merculous/PyBinPatch"
+reference = "update"
+resolved_reference = "cf186e5f27529e95bcb5eb9624fababf867b439e"
 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "968b0b090ff13218ae6581c6e6d4542686c2a5461ec952c52530afce80d31c20"
+content-hash = "4f08bfe9e0a35efdb1a18601b7c29185bee1f9291840e0fa8be87b9bb3a8b2b7"

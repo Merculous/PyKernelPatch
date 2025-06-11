@@ -1,32 +1,30 @@
 
+from io import BytesIO
+
 from armfind.find import (find_next_BL, find_next_blx_register,
                           find_next_BNE_W, find_next_CMP_with_value,
                           find_next_LDR_Literal, find_next_LDR_W_with_value,
                           find_next_MOV_register, find_next_MOV_W_with_value,
                           find_next_MOVT_with_value, find_next_MOVW_with_value,
                           find_next_pop)
-from binpatch.types import Buffer
 
 
 class BaseClass:
-    def __init__(self, data: Buffer, version: int, log: bool = True) -> None:
+    def __init__(self, data: BytesIO, version: int, log: bool = True) -> None:
         self._data = data
         self.log = log
         self.version = version
 
-    def getiOSVersion(self) -> None:
-        pass
-
 
 class AppleImage3NORAccess(BaseClass):
-    def __init__(self, data: Buffer, version: int, log: bool = True) -> None:
+    def __init__(self, data: BytesIO, version: int, log: bool = True) -> None:
         super().__init__(data, version, log)
 
         self.kextStart = self.getKextStart()
 
     def getKextStart(self) -> int:
         kModStr = b'com.apple.driver.AppleImage3NORAccess'
-        kModStrOffset = self._data.find(kModStr)
+        kModStrOffset = bytes(self._data.getvalue()).find(kModStr)
 
         if kModStrOffset == -1:
             raise Exception(f'Failed to find {kModStr.decode()}')
@@ -44,9 +42,9 @@ class AppleImage3NORAccess(BaseClass):
 
         if self.version in (3, 4):
             if self.version == 3:
-                insn = find_next_LDR_Literal(self._data, self.kextStart, 0, b'PROD'[::-1])
+                insn = find_next_LDR_Literal(self._data, self.kextStart, 0, BytesIO(b'PROD'[::-1]))
             else:
-                insn = find_next_LDR_W_with_value(self._data, self.kextStart, 0, b'PROD'[::-1])
+                insn = find_next_LDR_W_with_value(self._data, self.kextStart, 0, BytesIO(b'PROD'[::-1]))
 
             if insn is None:
                 raise Exception('Failed to find LDR(.W)!')
@@ -98,7 +96,7 @@ class AppleImage3NORAccess(BaseClass):
         insn = None
 
         if self.version in (3, 4):
-            insn = find_next_LDR_Literal(self._data, self.kextStart, 0 , b'ECID'[::-1])
+            insn = find_next_LDR_Literal(self._data, self.kextStart, 0 , BytesIO(b'ECID'[::-1]))
 
             if insn is None:
                 raise Exception('Failed to find LDR(.W) Rx, ECID!')
@@ -150,7 +148,7 @@ class AppleImage3NORAccess(BaseClass):
         insn = None
 
         if self.version in (3, 4):
-            insn = find_next_LDR_Literal(self._data, self.kextStart, 2, b'SHSH'[::-1])
+            insn = find_next_LDR_Literal(self._data, self.kextStart, 2, BytesIO(b'SHSH'[::-1]))
 
             if insn is None:
                 raise Exception('Failed to find LDR Rx, SHSH!')
@@ -226,7 +224,7 @@ class AppleImage3NORAccess(BaseClass):
         insn = None
 
         if self.version in (3, 4):
-            insn = find_next_LDR_Literal(self._data, self.kextStart, 2, b'SHSH'[::-1])
+            insn = find_next_LDR_Literal(self._data, self.kextStart, 2, BytesIO(b'SHSH'[::-1]))
 
             if insn is None:
                 raise Exception('Failed to find LDR Rx, SHSH!')
@@ -302,7 +300,7 @@ class AppleImage3NORAccess(BaseClass):
         insn = None
 
         if self.version in (3, 4):
-            insn = find_next_LDR_Literal(self._data, self.kextStart, 2, b'SHSH'[::-1])
+            insn = find_next_LDR_Literal(self._data, self.kextStart, 2, BytesIO(b'SHSH'[::-1]))
 
             if insn is None:
                 raise Exception('Failed to find LDR Rx, SHSH!')
