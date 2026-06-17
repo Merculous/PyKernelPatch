@@ -40,7 +40,7 @@ def main() -> None:
     else:
         print(f'iOS {version} not supported yet!')
 
-    writeBytesToPath(args.o[0], patcher.patchedData)
+    writeBytesToPath(args.o[0], bytes(patcher.patchedData))
 
 
 if __name__ == '__main__':
