@@ -17,6 +17,9 @@ class AppleImage3NORAccessPatcher(AppleImage3NORAccess):
             self.patchedData = replaceBufferAtIndex(self.patchedData, b'\x00\x20\x00\x20', offset, 4)
         elif self.version == 5:
             self.patchedData = replaceBufferAtIndex(self.patchedData, b'\x00\x20', offset, 2)
+        elif self.version == 7:
+            self.patchedData = replaceBufferAtIndex(self.patchedData, b'\x00\x20\x00\x20', offset, 4)
+
         else:
             raise Exception('UNIMPLEMENTED!')
 
@@ -27,6 +30,9 @@ class AppleImage3NORAccessPatcher(AppleImage3NORAccess):
             self.patchedData = replaceBufferAtIndex(self.patchedData, b'\x00\x20\x00\x20', offset, 4)
         elif self.version == 5:
             self.patchedData = replaceBufferAtIndex(self.patchedData, b'\x00\x20', offset, 2)
+        elif self.version == 7:
+            self.patchedData = replaceBufferAtIndex(self.patchedData, b'\x00\x20\x00\x20', offset, 4)
+
         else:
             raise Exception('UNIMPLEMENTED!')
         
@@ -38,6 +44,9 @@ class AppleImage3NORAccessPatcher(AppleImage3NORAccess):
             self.patchedData = replaceBufferAtIndex(self.patchedData, b'\x00\x20', offset, 2)
         elif self.version == 6:
             self.patchedData = replaceBufferAtIndex(self.patchedData, b'\x00\x20\x00\x20', offset, 4)
+        elif self.version == 7:
+            self.patchedData = replaceBufferAtIndex(self.patchedData, b'\x00\x20\x00\x20', offset, 4)
+
         else:
             raise Exception('UNIMPLEMENTED!')
 
@@ -48,6 +57,9 @@ class AppleImage3NORAccessPatcher(AppleImage3NORAccess):
             self.patchedData = replaceBufferAtIndex(self.patchedData, b'\x00\x20', offset, 2)
         elif self.version == 6:
             self.patchedData = replaceBufferAtIndex(self.patchedData, b'\x00\x20\x00\x20', offset, 4)
+        elif self.version == 7:
+            self.patchedData = replaceBufferAtIndex(self.patchedData, b'\x00\x20\x00\x20', offset, 4)
+
         else:
             raise Exception('UNIMPLEMENTED!')
 
@@ -58,6 +70,9 @@ class AppleImage3NORAccessPatcher(AppleImage3NORAccess):
             self.patchedData = replaceBufferAtIndex(self.patchedData, b'\x00\x20\x00\x20', offset, 4)
         elif self.version == 5:
             self.patchedData = replaceBufferAtIndex(self.patchedData, b'\x00\x20', offset, 2)
+        elif self.version == 7:
+            self.patchedData = replaceBufferAtIndex(self.patchedData, b'\x00\x20\x00\x20', offset, 4)
+
         else:
             raise Exception('UNIMPLEMENTED!')
         

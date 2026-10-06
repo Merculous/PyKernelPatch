@@ -87,6 +87,29 @@ class AppleImage3NORAccess(BaseClass):
 
             return blxOffset
 
+        elif self.version == 7:
+            insn = find_next_MOVT_with_value(self._data, self.kextStart, 0, 0x5052)
+
+            if insn is None:
+                raise Exception('Failed to find MOVT Rx, PR!')
+
+            insn, insnOffset = insn
+
+            if self.log:
+                print(f'Found MOVT Rx, PR at {insnOffset:x}')
+
+            bl = find_next_BL(self._data, insnOffset, 0)
+
+            if bl is None:
+                raise Exception('Failed to find BL!')
+
+            bl, blOffset = bl
+
+            if self.log:
+                print(f'Found BL at {blOffset:x}')
+
+            return blOffset
+
         else:
             raise Exception('UNIMPLEMENTED')
 
@@ -138,6 +161,29 @@ class AppleImage3NORAccess(BaseClass):
                 print(f'Found BLX at {blxOffset:x}')
 
             return blxOffset
+
+        elif self.version == 7:
+            insn = find_next_MOVT_with_value(self._data, self.kextStart, 0, 0x4543)
+
+            if insn is None:
+                raise Exception('Failed to find MOVT Rx, EC!')
+
+            insn, insnOffset = insn
+
+            if self.log:
+                print(f'Found MOVT Rx, EC at {insnOffset:x}')
+
+            bl = find_next_BL(self._data, insnOffset, 0)
+
+            if bl is None:
+                raise Exception('Failed to find BL!')
+
+            bl, blOffset = bl
+
+            if self.log:
+                print(f'Found BL at {blOffset:x}')
+
+            return blOffset
 
         else:
             raise Exception('UNIMPLEMENTED')
@@ -215,6 +261,29 @@ class AppleImage3NORAccess(BaseClass):
 
                 return bnewOffset
 
+        elif self.version == 7:
+            insn = find_next_MOVT_with_value(self._data, self.kextStart, 0, 0x5348)
+
+            if insn is None:
+                raise Exception('Failed to find MOVT Rx, SH!')
+
+            insn, insnOffset = insn
+
+            if self.log:
+                print(f'Found MOVT Rx, SH at {insnOffset:x}')
+
+            bnew = find_next_BNE_W(self._data, insnOffset, 1)
+
+            if bnew is None:
+                raise Exception('Failed to find BNE.W!')
+
+            bnew, bnewOffset = bnew
+
+            if self.log:
+                print(f'Found BNE.W at {bnewOffset:x}')
+
+            return bnewOffset
+
         else:
             raise Exception('UNIMPLEMENTED')
 
@@ -291,6 +360,29 @@ class AppleImage3NORAccess(BaseClass):
 
                 return bnewOffset
 
+        elif self.version == 7:
+            insn = find_next_MOVT_with_value(self._data, self.kextStart, 0, 0x5348)
+
+            if insn is None:
+                raise Exception('Failed to find MOVT Rx, SH!')
+
+            insn, insnOffset = insn
+
+            if self.log:
+                print(f'Found MOVT Rx, SH at {insnOffset:x}')
+
+            bnew = find_next_BNE_W(self._data, insnOffset, 2)
+
+            if bnew is None:
+                raise Exception('Failed to find BNE.W!')
+
+            bnew, bnewOffset = bnew
+
+            if self.log:
+                print(f'Found BNE.W at {bnewOffset:x}')
+
+            return bnewOffset
+
         else:
             raise Exception('UNIMPLEMENTED')
 
@@ -362,6 +454,29 @@ class AppleImage3NORAccess(BaseClass):
                 print(f'Found BLX at {blxOffset:x}')
 
             return blxOffset
+
+        elif self.version == 7:
+            movw = find_next_MOVW_with_value(self._data, self.kextStart, 0, 0x836)
+
+            if movw is None:
+                raise Exception('Failed to find MOVW Rx, #0x836!')
+
+            movw, movwOffset = movw
+
+            if self.log:
+                print(f'Found MOVW Rx, #0x836 at {movwOffset:x}')
+
+            bl = find_next_BL(self._data, movwOffset, 0)
+
+            if bl is None:
+                raise Exception('Failed to find BL!')
+
+            bl, blOffset = bl
+
+            if self.log:
+                print(f'Found BL at {blOffset:x}')
+
+            return blOffset
 
         else:
             raise Exception('UNIMPLEMENTED')
