@@ -79,7 +79,7 @@ class AppleImage3NORAccessPatcher(AppleImage3NORAccess):
     def patch_pk_verify_sha1(self) -> None:
         offset = self.find_pk_verify_sha1()
 
-        if self.version in (3, 4):
+        if self.version in (3, 4, 7):
             self.patchedData = replaceBufferAtIndex(self.patchedData, b'\x00\x20\x00\x20', offset, 4)
         elif self.version == 5:
             self.patchedData = replaceBufferAtIndex(self.patchedData, b'\x00\x20', offset, 2)

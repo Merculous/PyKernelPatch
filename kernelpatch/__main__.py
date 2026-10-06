@@ -38,13 +38,13 @@ def main() -> None:
         patcher.patch_hwdinfo_check()
 
     elif version == 7:
-        # iOS 7 (e.g. iPhone 4 / n92ap 7.1.2). pk_verify_sha1 is NOT yet ported for
-        # iOS 7 (its 0x4BF anchor does not map to the v3/4/5 POP/MOV.W pattern) - TODO.
+        # iOS 7 (e.g. iPhone 4 / n92ap 7.1.2).
         patcher.patch_hwdinfo_prod()
         patcher.patch_hwdinfo_ecid()
         patcher.patch_validate_check()
         patcher.patch_hwdinfo_check()
         patcher.patch_shsh_encrypt()
+        patcher.patch_pk_verify_sha1()
 
     else:
         print(f'iOS {version} not supported yet!')

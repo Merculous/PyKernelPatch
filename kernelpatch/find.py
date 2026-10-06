@@ -492,7 +492,7 @@ class AppleImage3NORAccess(BaseClass):
         if self.log:
             print(f'Found MOVW Rx, #0x4BF at {insnOffset:x}')
 
-        if self.version in (3, 4):
+        if self.version in (3, 4, 7):
             movw = find_next_MOV_W_with_value(self._data, insnOffset, 0, 0x3FF)
 
             if movw is None:
